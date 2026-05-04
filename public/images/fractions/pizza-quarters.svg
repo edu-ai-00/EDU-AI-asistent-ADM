@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" font-family="system-ui, sans-serif">
+  <!-- Pizza cut into 4 quarters, 1 highlighted -->
+  <text x="200" y="24" text-anchor="middle" font-size="16" font-weight="600" fill="#374151">Pizza rozrezana na 4 dily — 1 dil = 1/4</text>
+
+  <!-- Full circle (pizza base) -->
+  <circle cx="140" cy="140" r="90" fill="#FDE68A" stroke="#D97706" stroke-width="2"/>
+
+  <!-- Quarter lines -->
+  <line x1="140" y1="50" x2="140" y2="230" stroke="#92400E" stroke-width="2"/>
+  <line x1="50" y1="140" x2="230" y2="140" stroke="#92400E" stroke-width="2"/>
+
+  <!-- Highlight one quarter (top-right) -->
+  <path d="M140,140 L140,50 A90,90 0 0,1 230,140 Z" fill="#F59E0B" opacity="0.6" stroke="#92400E" stroke-width="2"/>
+
+  <!-- Labels inside quarters -->
+  <text x="170" y="108" text-anchor="middle" font-size="18" font-weight="700" fill="#92400E">1/4</text>
+  <text x="108" y="108" text-anchor="middle" font-size="14" fill="#92400E" opacity="0.5">1/4</text>
+  <text x="108" y="178" text-anchor="middle" font-size="14" fill="#92400E" opacity="0.5">1/4</text>
+  <text x="170" y="178" text-anchor="middle" font-size="14" fill="#92400E" opacity="0.5">1/4</text>
+
+  <!-- Arrow + annotation -->
+  <line x1="240" y1="95" x2="200" y2="100" stroke="#DC2626" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <defs><marker id="arrowRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#DC2626"/></marker></defs>
+
+  <text x="260" y="80" font-size="14" fill="#DC2626" font-weight="600">Toto je</text>
+  <text x="260" y="98" font-size="22" fill="#DC2626" font-weight="700">1/4</text>
+  <text x="260" y="116" font-size="14" fill="#DC2626" font-weight="600">pizzy</text>
+
+  <!-- Equation at bottom -->
+  <rect x="250" y="150" width="130" height="50" rx="8" fill="#FEF3C7" stroke="#D97706" stroke-width="1"/>
+  <text x="315" y="172" text-anchor="middle" font-size="13" fill="#92400E">1 dil ze 4 =</text>
+  <text x="315" y="192" text-anchor="middle" font-size="18" font-weight="700" fill="#92400E">jedna ctvrtina</text>
+</svg>
