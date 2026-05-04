@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 180" font-family="system-ui, sans-serif">
+  <!-- Subtracting 5/6 - 2/6 = 3/6 with bar model -->
+  <text x="200" y="22" text-anchor="middle" font-size="16" font-weight="600" fill="#374151">Odcitani: 5/6 - 2/6 = 3/6</text>
+
+  <!-- Bar 1: 5/6 -->
+  <text x="20" y="62" font-size="16" font-weight="700" fill="#2563EB">5/6</text>
+  <g transform="translate(55, 40)">
+    <rect x="0" y="0" width="45" height="30" rx="3" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <rect x="47" y="0" width="45" height="30" rx="3" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <rect x="94" y="0" width="45" height="30" rx="3" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <rect x="141" y="0" width="45" height="30" rx="3" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <rect x="188" y="0" width="45" height="30" rx="3" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <rect x="235" y="0" width="45" height="30" rx="3" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  </g>
+
+  <!-- Minus + removed blocks -->
+  <text x="320" y="62" font-size="24" font-weight="700" fill="#DC2626">- 2/6</text>
+
+  <!-- Bar 2: result with crossed out parts -->
+  <text x="20" y="112" font-size="12" fill="#6B7280">odeberu</text>
+  <g transform="translate(55, 90)">
+    <rect x="0" y="0" width="45" height="30" rx="3" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <rect x="47" y="0" width="45" height="30" rx="3" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <rect x="94" y="0" width="45" height="30" rx="3" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <!-- Crossed out -->
+    <rect x="141" y="0" width="45" height="30" rx="3" fill="#FCA5A5" stroke="#DC2626" stroke-width="1.5"/>
+    <line x1="141" y1="0" x2="186" y2="30" stroke="#DC2626" stroke-width="2"/>
+    <line x1="186" y1="0" x2="141" y2="30" stroke="#DC2626" stroke-width="2"/>
+    <rect x="188" y="0" width="45" height="30" rx="3" fill="#FCA5A5" stroke="#DC2626" stroke-width="1.5"/>
+    <line x1="188" y1="0" x2="233" y2="30" stroke="#DC2626" stroke-width="2"/>
+    <line x1="233" y1="0" x2="188" y2="30" stroke="#DC2626" stroke-width="2"/>
+    <rect x="235" y="0" width="45" height="30" rx="3" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  </g>
+
+  <!-- Equals line -->
+  <line x1="55" y1="130" x2="335" y2="130" stroke="#374151" stroke-width="2" stroke-dasharray="4,4"/>
+
+  <!-- Result -->
+  <g transform="translate(55, 140)">
+    <rect x="0" y="0" width="45" height="30" rx="3" fill="#F59E0B" stroke="#D97706" stroke-width="1.5"/>
+    <rect x="47" y="0" width="45" height="30" rx="3" fill="#F59E0B" stroke="#D97706" stroke-width="1.5"/>
+    <rect x="94" y="0" width="45" height="30" rx="3" fill="#F59E0B" stroke="#D97706" stroke-width="1.5"/>
+    <rect x="141" y="0" width="45" height="30" rx="3" fill="#E5E7EB" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="188" y="0" width="45" height="30" rx="3" fill="#E5E7EB" stroke="#D1D5DB" stroke-width="1"/>
+    <rect x="235" y="0" width="45" height="30" rx="3" fill="#E5E7EB" stroke="#D1D5DB" stroke-width="1"/>
+  </g>
+  <text x="340" y="162" font-size="18" font-weight="700" fill="#D97706">= 3/6</text>
+</svg>

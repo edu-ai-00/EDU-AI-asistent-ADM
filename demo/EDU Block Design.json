@@ -1,0 +1,101 @@
+{
+    "export_type": "block",
+    "uid": "40aa2f8f40aa2f8f",
+    "version": "1.0",
+    "type": "content",
+    "title": "Ukázkový blok - výklad a 2 dotazy",
+    "bg_image": "5-34-pozadi.jpg",
+    "bg_color": "#F5F5F5",
+    "metadata": {
+        "taxonomy": "11.11.2.4",
+        "difficulty": 5,
+        "durationSec": 342,
+        "prerequisites": "7.7.2.4" //zde budou i dalsi vlastnosti
+    },
+    "steps": [
+        {
+            "id": 1,
+            "type": "text",
+            "data": {
+                "text": "Teď se podíváme na práci s definicemi. Důležité je správné formátování textu a médií. A ještě: Teď se podíváme na práci s definicemi. Důležité je správné formátování textu a médií."
+            }
+        },
+        {
+            "id": 2,
+            "type": "media",
+            "data": {
+                "type": "video",
+                "source": "youtube",
+                "video_id": "mX8ctLGR_FY",
+                "start_time": 12,
+                "autoplay": false,
+                "caption": "Ukázkový video materiál"
+            }
+        },
+        {
+            "id": 3,
+            "type": "text",
+            "data": {
+                "text": "Nyní Markdown *tučný text* a LaTeX vzorec: $E=mc^2$",
+                "hint": "Markdown je způsob jednoduchého formátování.",
+                "help": "Neptej se, prostě to musíme vyzkoušet..."
+            }
+        },
+        {
+            "id": 4,
+            "type": "question_open",
+            "data": {
+                "question": "Jak jsi zatím spokojený s naší aplikací?.",
+                "hint": "Oceníme názor, uložíme si ho do historie...",
+                "help": "image:smile.png",
+                "placeholder": "Piš zde..."
+            }
+        },
+        {
+            "type": "question_mcq",
+            "id": 4,
+            "data": {
+                "display1": "Jsi v kurzu TESTOVÁNÍ. Vyber si prosím lekci.",
+                "display1_hint": "Tento krok tě přesměruje na vybranou lekci.",
+                "display1_help": "Pokud si chceš vybrat jiný kurz, klikni 2x na tlačítko zpět (šipka vlevo nahoře) a dostaneš se do hlavní nabídky.",
+                "display2": "image:lesson_select.png",
+                "question": "Vyber si dle libosti:",
+                "answers": [
+                    {
+                        "label": "1. definice (lehčí)",
+                        "image": "",
+                        "id": 1,
+                        "feedback1": "OK. Jdeme na lehčí :)",
+                        "feedback2": "image:bird_flying.png",
+                        "correct_answer": true,
+                        "visible_answer": true,
+                        "following_action": "lecture",
+                        "following_action_id": "5bfd60ec-8d89-41f4-adca"
+                    },
+                    {
+                        "label": "2. definice (těžší)",
+                        "image": "",
+                        "id": 2,
+                        "feedback1": "Dobřeee, tedy něco těžšího :)",
+                        "feedback2": "",
+                        "correct_answer": true,
+                        "visible_answer": true,
+                        "following_action": "action",
+                        "following_action_id": "harder_exercise"
+                    },
+                    {
+                        "label": "3. nejsem si jistý",
+                        "image": "",
+                        "id": 3,
+                        "feedback1": "V pohodě, promysli to...",
+                        "feedback2": "image:icon_smile.png",
+                        "correct_answer": false,
+                        "visible_answer": true,
+                        "following_action": "action",
+                        "following_action_id": "ask_again"
+                    }
+                ]
+            }
+        }
+    ]
+}

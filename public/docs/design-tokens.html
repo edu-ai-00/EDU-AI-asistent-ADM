@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduAI Theme Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Fira+Code&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Poppins', sans-serif; background: #F6F2FF; color: #3C315B; padding: 32px; max-width: 1200px; margin: 0 auto; }
+  h1 { font-family: 'Nunito', sans-serif; font-size: 36px; font-weight: 900; margin-bottom: 8px; }
+  h2 { font-family: 'Nunito', sans-serif; font-size: 24px; font-weight: 900; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid rgba(60,49,91,0.12); }
+  h3 { font-family: 'Nunito', sans-serif; font-size: 18px; font-weight: 800; margin: 24px 0 12px; color: rgba(60,49,91,0.64); }
+  p.subtitle { font-size: 15px; color: rgba(60,49,91,0.64); margin-bottom: 32px; }
+  .intro-box { background: white; border-radius: 16px; padding: 24px; margin-bottom: 32px; box-shadow: 0 4px 16px rgba(60,49,91,0.08); }
+  .intro-box p { font-size: 14px; line-height: 1.7; margin-bottom: 8px; }
+  .intro-box code { background: #F6F2FF; padding: 2px 6px; border-radius: 4px; font-family: 'Fira Code', monospace; font-size: 13px; }
+  .intro-box strong { color: #3C315B; }
+
+  /* Color grid */
+  .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .color-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(60,49,91,0.06); }
+  .color-swatch { height: 64px; display: flex; align-items: center; justify-content: center; }
+  .color-swatch span { font-family: 'Fira Code', monospace; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+  .color-swatch .light-text { color: white; background: rgba(0,0,0,0.2); }
+  .color-swatch .dark-text { color: #3C315B; background: rgba(255,255,255,0.6); }
+  .color-info { padding: 10px 12px; }
+  .color-name { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 13px; }
+  .color-desc { font-size: 11px; color: rgba(60,49,91,0.48); margin-top: 2px; }
+  .color-file { font-family: 'Fira Code', monospace; font-size: 10px; color: rgba(60,49,91,0.32); margin-top: 4px; }
+
+  /* Typography table */
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(60,49,91,0.06); margin-bottom: 16px; }
+  th { background: #3C315B; color: white; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 12px; text-align: left; padding: 10px 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 16px; border-bottom: 1px solid rgba(60,49,91,0.06); font-size: 13px; vertical-align: middle; }
+  td:first-child { font-family: 'Fira Code', monospace; font-size: 12px; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .sample { white-space: nowrap; }
+
+  /* Decoration previews */
+  .deco-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+  .deco-card { background: white; border-radius: 16px; padding: 20px; text-align: center; }
+  .deco-card.shadow-light { box-shadow: 0 4px 16px rgba(60,49,91,0.08); }
+  .deco-card.shadow-medium { box-shadow: 0 4px 12px rgba(60,49,91,0.12); }
+  .deco-card.shadow-strong { box-shadow: 0 4px 16px rgba(60,49,91,0.16); }
+  .deco-label { font-family: 'Fira Code', monospace; font-size: 12px; color: rgba(60,49,91,0.64); }
+  .deco-value { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; margin-top: 4px; }
+
+  .radius-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .radius-item { background: #AB9FF2; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; color: white; font-family: 'Fira Code', monospace; font-size: 11px; }
+
+  /* Gradient preview */
+  .gradient-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .gradient-card { border-radius: 16px; padding: 24px; color: white; }
+  .gradient-name { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 14px; }
+  .gradient-desc { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+
+  .badge { display: inline-block; background: rgba(60,49,91,0.08); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; color: rgba(60,49,91,0.64); margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<h1>EduAI Design Tokens</h1>
+<p class="subtitle">Visual reference for the centralized theme system. All values live in <code>lib/core/theme/</code></p>
+
+<div class="intro-box">
+  <p><strong>How to restyle the app:</strong> The entire visual identity is controlled by <strong>3 files</strong>. Change a value there and it updates everywhere in the app.</p>
+  <p><code>app_colors.dart</code> &mdash; All colors, gradients, opacity variants</p>
+  <p><code>app_text_styles.dart</code> &mdash; All text styles (font family, size, weight)</p>
+  <p><code>app_decorations.dart</code> &mdash; Border radii, shadows, card decorations</p>
+  <p style="margin-top:12px; font-size:13px; color:rgba(60,49,91,0.48);">Barrel export: <code>import 'core/theme/app_theme.dart';</code> imports everything.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2>1. Core Brand Colors</h2>
+<p style="font-size:13px; color:rgba(60,49,91,0.48); margin-bottom:16px;">The foundation. Changing these 5 values transforms the whole app.</p>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="color-swatch" style="background:#AB9FF2"><span class="light-text">#AB9FF2</span></div>
+    <div class="color-info"><div class="color-name">primary</div><div class="color-desc">Accent, buttons, highlights, active states</div><div class="color-file">AppColors.primary</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#3C315B"><span class="light-text">#3C315B</span></div>
+    <div class="color-info"><div class="color-name">primaryDark</div><div class="color-desc">All text, icons, shadows (the main dark color)</div><div class="color-file">AppColors.primaryDark</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#F6F2FF"><span class="dark-text">#F6F2FF</span></div>
+    <div class="color-info"><div class="color-name">background</div><div class="color-desc">Scaffold / page background</div><div class="color-file">AppColors.background</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#7F68C1"><span class="light-text">#7F68C1</span></div>
+    <div class="color-info"><div class="color-name">gradientPurple</div><div class="color-desc">Gradient partner for auth/header screens</div><div class="color-file">AppColors.gradientPurple</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFFFFF; border: 1px solid #E9E4F5"><span class="dark-text">#FFFFFF</span></div>
+    <div class="color-info"><div class="color-name">surface</div><div class="color-desc">Card backgrounds, buttons, containers</div><div class="color-file">AppColors.surface</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>2. Status Colors</h2>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="color-swatch" style="background:#2FBE87"><span class="light-text">#2FBE87</span></div>
+    <div class="color-info"><div class="color-name">success</div><div class="color-desc">Completed, correct, online</div><div class="color-file">AppColors.success</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FF7128"><span class="light-text">#FF7128</span></div>
+    <div class="color-info"><div class="color-name">orange</div><div class="color-desc">XP, streaks, promos, update badges</div><div class="color-file">AppColors.orange</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FF9800"><span class="light-text">#FF9800</span></div>
+    <div class="color-info"><div class="color-name">warning</div><div class="color-desc">Warnings, offline indicators</div><div class="color-file">AppColors.warning</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#E53935"><span class="light-text">#E53935</span></div>
+    <div class="color-info"><div class="color-name">error</div><div class="color-desc">Errors, destructive actions, wrong answers</div><div class="color-file">AppColors.error</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FF6B6B"><span class="light-text">#FF6B6B</span></div>
+    <div class="color-info"><div class="color-name">errorLight</div><div class="color-desc">Wrong answer highlight in quizzes</div><div class="color-file">AppColors.errorLight</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>3. UI Surface Colors</h2>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="color-swatch" style="background:#E9E4F5"><span class="dark-text">#E9E4F5</span></div>
+    <div class="color-info"><div class="color-name">surfaceLight</div><div class="color-desc">Icon backgrounds, subtle fills</div><div class="color-file">AppColors.surfaceLight</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#DDD5EF"><span class="dark-text">#DDD5EF</span></div>
+    <div class="color-info"><div class="color-name">progressTrack</div><div class="color-desc">Progress bar background track</div><div class="color-file">AppColors.progressTrack</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#AFA3F6"><span class="light-text">#AFA3F6</span></div>
+    <div class="color-info"><div class="color-name">progressFill</div><div class="color-desc">Progress bar fill, meta icons</div><div class="color-file">AppColors.progressFill</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#6B5CFF"><span class="light-text">#6B5CFF</span></div>
+    <div class="color-info"><div class="color-name">quizPurple</div><div class="color-desc">Quiz-specific accents</div><div class="color-file">AppColors.quizPurple</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#E8E0F4"><span class="dark-text">#E8E0F4</span></div>
+    <div class="color-info"><div class="color-name">inputBg</div><div class="color-desc">Input field backgrounds</div><div class="color-file">AppColors.inputBg</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#F3F0FF"><span class="dark-text">#F3F0FF</span></div>
+    <div class="color-info"><div class="color-name">infoBg</div><div class="color-desc">Info panels, selected option background</div><div class="color-file">AppColors.infoBg</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#827B96"><span class="light-text">#827B96</span></div>
+    <div class="color-info"><div class="color-name">disabled</div><div class="color-desc">Disabled text</div><div class="color-file">AppColors.disabled</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#BEB9C9"><span class="dark-text">#BEB9C9</span></div>
+    <div class="color-info"><div class="color-name">disabledButton</div><div class="color-desc">Disabled button fill</div><div class="color-file">AppColors.disabledButton</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#8178B5"><span class="light-text">#8178B5</span></div>
+    <div class="color-info"><div class="color-name">progressBorder</div><div class="color-desc">Progress bar / track border</div><div class="color-file">AppColors.progressBorder</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#1A1A2E"><span class="light-text">#1A1A2E</span></div>
+    <div class="color-info"><div class="color-name">videoDark</div><div class="color-desc">Video player background</div><div class="color-file">AppColors.videoDark</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>4. Card & Badge Backgrounds</h2>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="color-swatch" style="background:#A7D9FF"><span class="dark-text">#A7D9FF</span></div>
+    <div class="color-info"><div class="color-name">cardBlue</div><div class="color-file">AppColors.cardBlue</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#E8D4F8"><span class="dark-text">#E8D4F8</span></div>
+    <div class="color-info"><div class="color-name">cardLavender</div><div class="color-file">AppColors.cardLavender</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFE4B5"><span class="dark-text">#FFE4B5</span></div>
+    <div class="color-info"><div class="color-name">cardPeach</div><div class="color-file">AppColors.cardPeach</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFFFC6"><span class="dark-text">#FFFFC6</span></div>
+    <div class="color-info"><div class="color-name">cardYellow</div><div class="color-file">AppColors.cardYellow</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#E6F7F1"><span class="dark-text">#E6F7F1</span></div>
+    <div class="color-info"><div class="color-name">successBg</div><div class="color-file">AppColors.successBg</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFEBEE"><span class="dark-text">#FFEBEE</span></div>
+    <div class="color-info"><div class="color-name">errorBg</div><div class="color-file">AppColors.errorBg</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFF9E6"><span class="dark-text">#FFF9E6</span></div>
+    <div class="color-info"><div class="color-name">hintBg</div><div class="color-file">AppColors.hintBg</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFD666"><span class="dark-text">#FFD666</span></div>
+    <div class="color-info"><div class="color-name">hintBorder</div><div class="color-file">AppColors.hintBorder</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFB800"><span class="light-text">#FFB800</span></div>
+    <div class="color-info"><div class="color-name">hintIconColor</div><div class="color-file">AppColors.hintIconColor</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFE082"><span class="dark-text">#FFE082</span></div>
+    <div class="color-info"><div class="color-name">hintIcon</div><div class="color-file">AppColors.hintIcon</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFEDE6"><span class="dark-text">#FFEDE6</span></div>
+    <div class="color-info"><div class="color-name">orangeBg</div><div class="color-file">AppColors.orangeBg</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#E8F5E9"><span class="dark-text">#E8F5E9</span></div>
+    <div class="color-info"><div class="color-name">successBgLight</div><div class="color-file">AppColors.successBgLight</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>5. Avatar Colors</h2>
+<p style="font-size:13px; color:rgba(60,49,91,0.48); margin-bottom:16px;">Background colors for the 6 avatar characters. Order matters (index 0-5).</p>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFE4D6"><span class="dark-text">#FFE4D6</span></div>
+    <div class="color-info"><div class="color-name">avatarFox</div><div class="color-file">index 0</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#E8E8E8"><span class="dark-text">#E8E8E8</span></div>
+    <div class="color-info"><div class="color-name">avatarPanda</div><div class="color-file">index 1</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFF3D6"><span class="dark-text">#FFF3D6</span></div>
+    <div class="color-info"><div class="color-name">avatarLion</div><div class="color-file">index 2</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#D6F5E6"><span class="dark-text">#D6F5E6</span></div>
+    <div class="color-info"><div class="color-name">avatarFrog</div><div class="color-file">index 3</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#E8DFF5"><span class="dark-text">#E8DFF5</span></div>
+    <div class="color-info"><div class="color-name">avatarOwl</div><div class="color-file">index 4</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFE8F0"><span class="dark-text">#FFE8F0</span></div>
+    <div class="color-info"><div class="color-name">avatarCat</div><div class="color-file">index 5</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>6. Subject Colors</h2>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFF3D4"><span class="dark-text">#FFF3D4</span></div>
+    <div class="color-info"><div class="color-name">subjectGrammar</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#FFE4E4"><span class="dark-text">#FFE4E4</span></div>
+    <div class="color-info"><div class="color-name">subjectLiterature</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#D4F8E8"><span class="dark-text">#D4F8E8</span></div>
+    <div class="color-info"><div class="color-name">subjectMath</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#D4F4FF"><span class="dark-text">#D4F4FF</span></div>
+    <div class="color-info"><div class="color-name">subjectChemistry</div></div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#E8D4F8"><span class="dark-text">#E8D4F8</span></div>
+    <div class="color-info"><div class="color-name">subjectBiology</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>7. Gradients</h2>
+<div class="gradient-grid">
+  <div class="gradient-card" style="background: linear-gradient(to bottom, #7F68C1, #3C315B);">
+    <div class="gradient-name">authGradient</div>
+    <div class="gradient-desc">Login / welcome screen background</div>
+  </div>
+  <div class="gradient-card" style="background: linear-gradient(to right, #AB9FF2, #7F68C1);">
+    <div class="gradient-name">headerGradient</div>
+    <div class="gradient-desc">Course detail header</div>
+  </div>
+  <div class="gradient-card" style="background: linear-gradient(to right, #FFB347, #FF8C00);">
+    <div class="gradient-name">bannerGradient</div>
+    <div class="gradient-desc">Email validation banner</div>
+  </div>
+  <div class="gradient-card" style="background: linear-gradient(to bottom, #FF7128, #FFD000);">
+    <div class="gradient-name">xpGradient</div>
+    <div class="gradient-desc">XP / achievement progress</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>8. Typography</h2>
+<p style="font-size:13px; color:rgba(60,49,91,0.48); margin-bottom:16px;">3 font families: <strong>Nunito</strong> (headings, labels), <strong>Poppins</strong> (body, UI), <strong>Fira Code</strong> (code). All default to <code>primaryDark</code> color.</p>
+
+<h3>Nunito &mdash; Headings & Display</h3>
+<table>
+  <tr><th>Token</th><th>Size</th><th>Weight</th><th>Sample</th></tr>
+  <tr><td>heading1()</td><td>32</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:24px;font-weight:900">Denni procvicovani</span></td></tr>
+  <tr><td>heading2()</td><td>28</td><td>800</td><td><span class="sample" style="font-family:Nunito;font-size:22px;font-weight:800">Rychle kvizy</span></td></tr>
+  <tr><td>heading2Bold()</td><td>28</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:22px;font-weight:900">Kurzy</span></td></tr>
+  <tr><td>heading3()</td><td>24</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:20px;font-weight:900">Dialog Title</span></td></tr>
+  <tr><td>heading3Alt()</td><td>24</td><td>700</td><td><span class="sample" style="font-family:Nunito;font-size:20px;font-weight:700">PIN Input</span></td></tr>
+  <tr><td>heading4()</td><td>22</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:18px;font-weight:900">Empty State</span></td></tr>
+  <tr><td>cardTitle()</td><td>20</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:17px;font-weight:900">Course Name</span></td></tr>
+  <tr><td>cardTitleAlt()</td><td>20</td><td>700</td><td><span class="sample" style="font-family:Nunito;font-size:17px;font-weight:700">Alt Title</span></td></tr>
+  <tr><td>cardTitleSmall()</td><td>18</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:16px;font-weight:900">Lesson Card</span></td></tr>
+  <tr><td>subtitle()</td><td>18</td><td>700</td><td><span class="sample" style="font-family:Nunito;font-size:16px;font-weight:700">Section Sub</span></td></tr>
+  <tr><td>menuItem()</td><td>17</td><td>700</td><td><span class="sample" style="font-family:Nunito;font-size:15px;font-weight:700">Menu Item</span></td></tr>
+  <tr><td>statValue()</td><td>16</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:14px;font-weight:900">23 dnu</span></td></tr>
+  <tr><td>statValueAlt()</td><td>16</td><td>800</td><td><span class="sample" style="font-family:Nunito;font-size:14px;font-weight:800">Prozkoumat</span></td></tr>
+  <tr><td>statSuffix()</td><td>16</td><td>700</td><td><span class="sample" style="font-family:Nunito;font-size:14px;font-weight:700">days</span></td></tr>
+  <tr><td>actionText()</td><td>15</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:14px;font-weight:900">Zobrazit vse</span></td></tr>
+  <tr><td>actionSmall()</td><td>14</td><td>600</td><td><span class="sample" style="font-family:Nunito;font-size:13px;font-weight:600">Action</span></td></tr>
+  <tr><td>badge()</td><td>12</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:12px;font-weight:900">NOVE</span></td></tr>
+  <tr><td>badgeSmall()</td><td>11</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:11px;font-weight:900">2</span></td></tr>
+  <tr><td>badgeTiny()</td><td>10.67</td><td>900</td><td><span class="sample" style="font-family:Nunito;font-size:10px;font-weight:900">GEO</span></td></tr>
+  <tr><td>navLabel()</td><td>11</td><td>600 / 400</td><td><span class="sample" style="font-family:Nunito;font-size:11px;font-weight:600">Domu</span> <span class="badge">bottom nav</span></td></tr>
+</table>
+
+<h3>Poppins &mdash; Body & UI</h3>
+<table>
+  <tr><th>Token</th><th>Size</th><th>Weight</th><th>Sample</th></tr>
+  <tr><td>buttonLarge()</td><td>16</td><td>600</td><td><span class="sample" style="font-family:Poppins;font-size:15px;font-weight:600">Pokracovat</span></td></tr>
+  <tr><td>bodyLarge()</td><td>16</td><td>500</td><td><span class="sample" style="font-family:Poppins;font-size:15px;font-weight:500">Form input text</span></td></tr>
+  <tr><td>bodyBold()</td><td>15</td><td>700</td><td><span class="sample" style="font-family:Poppins;font-size:14px;font-weight:700">Bold paragraph</span></td></tr>
+  <tr><td>bodySemiBold()</td><td>15</td><td>600</td><td><span class="sample" style="font-family:Poppins;font-size:14px;font-weight:600">Chip text</span></td></tr>
+  <tr><td>body()</td><td>15</td><td>500</td><td><span class="sample" style="font-family:Poppins;font-size:14px;font-weight:500">Default body text for descriptions</span></td></tr>
+  <tr><td>bodyItalic()</td><td>15</td><td>500 <em>italic</em></td><td><span class="sample" style="font-family:Poppins;font-size:14px;font-weight:500;font-style:italic">Emphasis text</span></td></tr>
+  <tr><td>labelMedium()</td><td>14</td><td>600</td><td><span class="sample" style="font-family:Poppins;font-size:13px;font-weight:600">Label</span></td></tr>
+  <tr><td>bodySmall()</td><td>14</td><td>500</td><td><span class="sample" style="font-family:Poppins;font-size:13px;font-weight:500">Secondary text</span></td></tr>
+  <tr><td>meta()</td><td>13</td><td>500</td><td><span class="sample" style="font-family:Poppins;font-size:12px;font-weight:500">8 lekci &bull; 3 hod</span></td></tr>
+  <tr><td>metaBold()</td><td>13</td><td>600</td><td><span class="sample" style="font-family:Poppins;font-size:12px;font-weight:600">Skill label</span></td></tr>
+  <tr><td>caption()</td><td>12</td><td>500</td><td><span class="sample" style="font-family:Poppins;font-size:11px;font-weight:500">pred 3 hod</span></td></tr>
+  <tr><td>captionBold()</td><td>12</td><td>600</td><td><span class="sample" style="font-family:Poppins;font-size:11px;font-weight:600">SECTION</span></td></tr>
+  <tr><td>chipLabel()</td><td>11</td><td>600</td><td><span class="sample" style="font-family:Poppins;font-size:11px;font-weight:600;letter-spacing:0.5px">MENU</span></td></tr>
+</table>
+
+<h3>Fira Code &mdash; Code</h3>
+<table>
+  <tr><th>Token</th><th>Size</th><th>Sample</th></tr>
+  <tr><td>codeBlock()</td><td>13</td><td><span class="sample" style="font-family:'Fira Code',monospace;font-size:13px;background:#F6F2FF;padding:2px 8px;border-radius:4px">print('hello')</span></td></tr>
+  <tr><td>codeInline()</td><td>14</td><td><span class="sample" style="font-family:'Fira Code',monospace;font-size:14px">x = 42</span></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>9. Border Radii</h2>
+<div class="radius-row">
+  <div>
+    <div class="radius-item" style="border-radius:8px">8</div>
+    <div style="font-size:11px;text-align:center;margin-top:4px;font-family:'Fira Code',monospace">radiusXS</div>
+  </div>
+  <div>
+    <div class="radius-item" style="border-radius:12px">12</div>
+    <div style="font-size:11px;text-align:center;margin-top:4px;font-family:'Fira Code',monospace">radiusS</div>
+  </div>
+  <div>
+    <div class="radius-item" style="border-radius:16px">16</div>
+    <div style="font-size:11px;text-align:center;margin-top:4px;font-family:'Fira Code',monospace">radiusM</div>
+  </div>
+  <div>
+    <div class="radius-item" style="border-radius:20px">20</div>
+    <div style="font-size:11px;text-align:center;margin-top:4px;font-family:'Fira Code',monospace">radiusL</div>
+  </div>
+  <div>
+    <div class="radius-item" style="border-radius:24px">24</div>
+    <div style="font-size:11px;text-align:center;margin-top:4px;font-family:'Fira Code',monospace">radiusXL</div>
+  </div>
+  <div>
+    <div class="radius-item" style="border-radius:30px">30</div>
+    <div style="font-size:11px;text-align:center;margin-top:4px;font-family:'Fira Code',monospace">radiusPill</div>
+  </div>
+  <div>
+    <div class="radius-item" style="border-radius:32px 32px 0 0; width:96px">32 top</div>
+    <div style="font-size:11px;text-align:center;margin-top:4px;font-family:'Fira Code',monospace">radiusSheet</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>10. Shadows</h2>
+<div class="deco-grid">
+  <div class="deco-card shadow-light">
+    <div class="deco-label">shadowLight</div>
+    <div class="deco-value">8% &bull; blur 16</div>
+    <div style="font-size:11px;color:rgba(60,49,91,0.48);margin-top:4px">Subtle cards</div>
+  </div>
+  <div class="deco-card shadow-medium">
+    <div class="deco-label">shadowMedium</div>
+    <div class="deco-value">12% &bull; blur 12</div>
+    <div style="font-size:11px;color:rgba(60,49,91,0.48);margin-top:4px">Nav bar</div>
+  </div>
+  <div class="deco-card shadow-strong">
+    <div class="deco-label">shadowStrong</div>
+    <div class="deco-value">16% &bull; blur 16</div>
+    <div style="font-size:11px;color:rgba(60,49,91,0.48);margin-top:4px">Floating buttons, CTAs</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>11. PrimaryDark Opacity Scale</h2>
+<p style="font-size:13px; color:rgba(60,49,91,0.48); margin-bottom:16px;">These are auto-derived from <code>primaryDark</code>. Change the base color and all variants update.</p>
+<div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px;">
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.06);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">06</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.08);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">08</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.12);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">12</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.16);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">16</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.24);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">24</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.32);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">32</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.48);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">48</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.64);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">64</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.72);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">72</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.80);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">80</div>
+  </div>
+  <div style="width:80px;text-align:center">
+    <div style="height:40px;background:rgba(60,49,91,0.88);border-radius:8px;margin-bottom:4px"></div>
+    <div style="font-size:10px;font-family:'Fira Code',monospace">88</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>Quick Reference: File Locations</h2>
+<div class="intro-box">
+  <p><strong>Colors:</strong> <code>lib/core/theme/app_colors.dart</code></p>
+  <p><strong>Text styles:</strong> <code>lib/core/theme/app_text_styles.dart</code></p>
+  <p><strong>Shadows &amp; radii:</strong> <code>lib/core/theme/app_decorations.dart</code></p>
+  <p><strong>ThemeData:</strong> <code>lib/core/theme/app_theme.dart</code></p>
+  <p style="margin-top:16px; font-size:13px; color:rgba(60,49,91,0.48);">
+    <strong>Example change:</strong> To switch the main purple from <code>#AB9FF2</code> to blue <code>#4A90D9</code>, edit line 9 in <code>app_colors.dart</code>:<br>
+    <code>static const Color primary = Color(0xFF4A90D9);</code><br>
+    Every button, accent, gradient, and highlight across all ~30 files updates automatically.
+  </p>
+</div>
+
+<p style="text-align:center; font-size:12px; color:rgba(60,49,91,0.32); margin-top:48px;">
+  Generated from EduAI codebase &bull; lib/core/theme/ &bull; Apr 2026
+</p>
+
+</body>
+</html>

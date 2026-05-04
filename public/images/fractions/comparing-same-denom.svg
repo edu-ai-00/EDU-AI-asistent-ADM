@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" font-family="system-ui, sans-serif">
+  <!-- Comparing 2/5 vs 4/5 with bar models -->
+  <text x="200" y="22" text-anchor="middle" font-size="16" font-weight="600" fill="#374151">Porovnani: 2/5 a 4/5</text>
+
+  <!-- Bar 1: 2/5 -->
+  <text x="30" y="62" font-size="20" font-weight="700" fill="#2563EB">2/5</text>
+  <g transform="translate(70, 40)">
+    <rect x="0" y="0" width="60" height="35" rx="4" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <rect x="62" y="0" width="60" height="35" rx="4" fill="#3B82F6" stroke="#1E40AF" stroke-width="1.5"/>
+    <rect x="124" y="0" width="60" height="35" rx="4" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+    <rect x="186" y="0" width="60" height="35" rx="4" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+    <rect x="248" y="0" width="60" height="35" rx="4" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  </g>
+
+  <!-- Bar 2: 4/5 -->
+  <text x="30" y="122" font-size="20" font-weight="700" fill="#DC2626">4/5</text>
+  <g transform="translate(70, 100)">
+    <rect x="0" y="0" width="60" height="35" rx="4" fill="#EF4444" stroke="#B91C1C" stroke-width="1.5"/>
+    <rect x="62" y="0" width="60" height="35" rx="4" fill="#EF4444" stroke="#B91C1C" stroke-width="1.5"/>
+    <rect x="124" y="0" width="60" height="35" rx="4" fill="#EF4444" stroke="#B91C1C" stroke-width="1.5"/>
+    <rect x="186" y="0" width="60" height="35" rx="4" fill="#EF4444" stroke="#B91C1C" stroke-width="1.5"/>
+    <rect x="248" y="0" width="60" height="35" rx="4" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  </g>
+
+  <!-- Comparison -->
+  <rect x="100" y="152" width="200" height="36" rx="10" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5"/>
+  <text x="200" y="175" text-anchor="middle" font-size="18" font-weight="700" fill="#92400E">2/5  &lt;  4/5</text>
+
+  <!-- Labels -->
+  <text x="100" y="76" font-size="11" fill="white" font-weight="600" text-anchor="middle">1</text>
+  <text x="162" y="76" font-size="11" fill="white" font-weight="600" text-anchor="middle">2</text>
+  <text x="100" y="136" font-size="11" fill="white" font-weight="600" text-anchor="middle">1</text>
+  <text x="162" y="136" font-size="11" fill="white" font-weight="600" text-anchor="middle">2</text>
+  <text x="224" y="136" font-size="11" fill="white" font-weight="600" text-anchor="middle">3</text>
+  <text x="286" y="136" font-size="11" fill="white" font-weight="600" text-anchor="middle">4</text>
+</svg>
