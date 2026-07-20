@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Image, GripVertical, Lock, FileText, BookOpen, Boxes } from "lucide-react";
+import { Plus, Trash2, Image, GripVertical, Lock, FileText, BookOpen, Boxes, ShieldAlert } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CourseV2, LessonV2, BlockV2, HeaderImage } from "@/types/block-v2";
 import {
@@ -205,6 +205,24 @@ export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
                   />
                 </div>
               )}
+            </div>
+
+            {/* AI Context */}
+            <div className="col-span-2">
+              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                <FileText className="w-4 h-4 text-blue-500" />
+                AI context
+              </label>
+              <p className="text-xs text-gray-500 mb-1">
+                Didaktická doporučení a řešení obvyklých chyb — kontext pro AI tutora.
+              </p>
+              <textarea
+                value={course.ai_context || ""}
+                onChange={(e) => handleFieldChange("ai_context", e.target.value)}
+                rows={6}
+                placeholder="Didaktická doporučení, časté chyby studentů a jak je řešit…"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
             </div>
 
             <div>
@@ -427,6 +445,45 @@ export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
               />
               <p className="text-xs text-gray-500 mt-1">Maximum XP earnable from this course. Leave empty for no limit.</p>
             </div>
+
+            {/* Stop Gambling toggle */}
+            <div className="col-span-2 flex items-center gap-3">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={course.stop_gambling || false}
+                  onChange={(e) => handleFieldChange("stop_gambling", e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500" />
+              </label>
+              <div>
+                <span className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                  <ShieldAlert className="w-4 h-4 text-red-500" />
+                  Stop Gambling
+                </span>
+                <p className="text-xs text-gray-500">Zastavit rychlé, náhodné proklikávání odpovědí</p>
+              </div>
+            </div>
+
+            {/* Stop Notice — shown only when Stop Gambling is enabled */}
+            {course.stop_gambling && (
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Stop Notice
+                </label>
+                <p className="text-xs text-gray-500 mb-1">
+                  Vzkaz zobrazený studentům při identifikaci gamblingu. Ponecháte-li prázdné, použije se systémový.
+                </p>
+                <textarea
+                  value={course.stop_notice || ""}
+                  onChange={(e) => handleFieldChange("stop_notice", e.target.value)}
+                  rows={3}
+                  placeholder="Zpomal a odpovídej s rozmyslem…"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+            )}
           </div>
         </TabsContent>
 

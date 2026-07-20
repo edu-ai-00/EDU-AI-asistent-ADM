@@ -144,6 +144,15 @@ export function QuestionStepEditor({
               placeholder="Expected answer"
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
+            <label className="flex items-center gap-2 mt-2">
+              <input
+                type="checkbox"
+                checked={q.allow_photo || false}
+                onChange={(e) => updateQuestion({ allow_photo: e.target.checked || undefined })}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm text-gray-700">Allow Photo Input</span>
+            </label>
           </div>
         )}
 

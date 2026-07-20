@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://app-api.edu-ai.eu/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 /**
  * POST /api/auth/login → proxy to Laravel /api/admin/auth/send-code

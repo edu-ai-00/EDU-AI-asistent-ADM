@@ -5,8 +5,10 @@ import { useCourses } from "@/hooks/useCourses";
 import {
   useBackfillPreview,
   useBackfillRun,
+  useBackfillTimestamps,
   type BackfillPreview,
   type BackfillResult,
+  type TimestampBackfillResult,
 } from "@/hooks/useEloBackfill";
 import { Button } from "@/components/ui/Button";
 import {
@@ -19,6 +21,7 @@ import {
   Blocks,
   Zap,
   Clock,
+  Timer,
 } from "lucide-react";
 
 export default function EloBackfillPage() {
@@ -26,6 +29,30 @@ export default function EloBackfillPage() {
   const [previewCourseId, setPreviewCourseId] = useState<string | null>(null);
   const [runResult, setRunResult] = useState<BackfillResult | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [timestampResult, setTimestampResult] =
+    useState<TimestampBackfillResult | null>(null);
+  // When on, the timestamp backfill also reprocesses rows currently at
+  // duration_ms = 0 (left over from a buggy earlier run). Rows with real
+  // positive durations are never touched, even with this flag on.
+  const [timestampForce, setTimestampForce] = useState(false);
+  // Cumulative counters across the per-call pagination loop. Reset on each
+  // new operation (Dry run / Spustit backfill) so the UI shows totals for
+  // the current op, not the last one.
+  const [timestampProgress, setTimestampProgress] = useState<{
+    processed: number;
+    lessonFilled: number;
+    quizFilled: number;
+    unresolved: number;
+    remaining: number | null;
+    running: boolean;
+  }>({
+    processed: 0,
+    lessonFilled: 0,
+    quizFilled: 0,
+    unresolved: 0,
+    remaining: null,
+    running: false,
+  });
 
   const { data: courses, isLoading: coursesLoading } = useCourses();
   const {
@@ -34,6 +61,61 @@ export default function EloBackfillPage() {
     refetch: refetchPreview,
   } = useBackfillPreview(previewCourseId);
   const backfillRun = useBackfillRun();
+  const backfillTimestamps = useBackfillTimestamps();
+
+  /**
+   * Drive the timestamp backfill. The server processes at most ~1500 rows
+   * per call (Cloudflare cuts at 120 s), so for large courses we loop the
+   * endpoint until `done: true`. Dry runs always finish in one call.
+   *
+   * Progress counters live in `timestampProgress` so the UI shows
+   * cumulative totals while the loop runs.
+   */
+  const handleTimestampBackfill = async (dryRun: boolean) => {
+    if (!selectedCourseId) return;
+
+    setTimestampResult(null);
+    setTimestampProgress({
+      processed: 0,
+      lessonFilled: 0,
+      quizFilled: 0,
+      unresolved: 0,
+      remaining: null,
+      running: true,
+    });
+
+    // Hard ceiling on iterations as a safety net — at 1500 rows/call this
+    // covers 75 000 rows per course, far above current realistic volume.
+    const MAX_ITERATIONS = 50;
+
+    try {
+      let last: TimestampBackfillResult | null = null;
+      for (let i = 0; i < MAX_ITERATIONS; i++) {
+        const result = await backfillTimestamps.mutateAsync({
+          courseId: selectedCourseId,
+          dryRun,
+          force: timestampForce,
+        });
+        last = result;
+
+        setTimestampProgress((prev) => ({
+          processed: prev.processed + result.processed,
+          lessonFilled: prev.lessonFilled + result.lesson_filled,
+          quizFilled: prev.quizFilled + result.quiz_filled,
+          unresolved: prev.unresolved + result.unresolved,
+          remaining: result.total_remaining,
+          running: !result.done,
+        }));
+
+        if (result.done) break;
+      }
+      setTimestampResult(last);
+    } catch {
+      // Error surfaces via backfillTimestamps.error
+    } finally {
+      setTimestampProgress((prev) => ({ ...prev, running: false }));
+    }
+  };
 
   const handlePreview = () => {
     if (!selectedCourseId) return;
@@ -181,6 +263,127 @@ export default function EloBackfillPage() {
 
       {/* Run results */}
       {runResult && <RunResults result={runResult} />}
+
+      {/* Timestamp backfill — populates opened_at / confirmed_at /
+          duration_ms on historical elo_interactions rows so the CSV
+          export shows per-block solving times for lessons and quizzes. */}
+      <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <Timer className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Backfill časových razítek (Doba řešení)
+            </h2>
+            <p className="text-xs text-gray-600 mt-1">
+              Doplní <code className="bg-gray-100 px-1 rounded">opened_at</code>,{" "}
+              <code className="bg-gray-100 px-1 rounded">confirmed_at</code> a{" "}
+              <code className="bg-gray-100 px-1 rounded">duration_ms</code> na
+              existující ELO interakce. Lekce: skutečné časy z{" "}
+              <code className="bg-gray-100 px-1 rounded">progress_data</code>.
+              Kvízy: dopočet z rozdílů <code className="bg-gray-100 px-1 rounded">created_at</code>{" "}
+              v rámci sezení (≤ 30 min), clamped 3 s – 5 min.
+              Slouží jako fallback pro historická data — nová verze appky už
+              posílá razítka přímo.
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Při běhu se přepisují <strong>jen</strong> řádky bez časových
+              razítek nebo s <code className="bg-gray-100 px-1 rounded">duration_ms = 0</code>{" "}
+              (pozůstatek po starší vadné verzi). Řádky s reálnou nenulovou
+              dobou (poslané přímo z aplikace) backfill nikdy nepřepíše,
+              takže opakované spuštění je bezpečné.
+            </p>
+          </div>
+        </div>
+        <label className="flex items-start gap-2 text-xs text-gray-700 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={timestampForce}
+            onChange={(e) => setTimestampForce(e.target.checked)}
+            className="mt-0.5 rounded border-gray-300"
+          />
+          <span>
+            <strong>Re-run i&nbsp;na již zpracovaná data</strong> – přidá řádky
+            s <code className="bg-gray-100 px-1 rounded">duration_ms = 0</code> do
+            výběru (oprava po Carbon&nbsp;3 chybě). Reálné nenulové hodnoty
+            zůstávají nedotčené.
+          </span>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() => handleTimestampBackfill(true)}
+            variant="secondary"
+            size="sm"
+            disabled={!selectedCourseId || backfillTimestamps.isPending}
+            isLoading={
+              backfillTimestamps.isPending && timestampResult?.dry_run !== false
+            }
+          >
+            <Eye className="w-4 h-4" />
+            Dry run
+          </Button>
+          <Button
+            onClick={() => handleTimestampBackfill(false)}
+            size="sm"
+            disabled={!selectedCourseId || backfillTimestamps.isPending}
+            isLoading={
+              backfillTimestamps.isPending && timestampResult?.dry_run === false
+            }
+          >
+            <Play className="w-4 h-4" />
+            Spustit backfill{timestampForce ? " (re-run)" : ""}
+          </Button>
+        </div>
+        {(timestampResult !== null ||
+          timestampProgress.running ||
+          timestampProgress.processed > 0) && (
+          <div className="rounded-md bg-gray-50 border border-gray-200 p-3 text-xs space-y-1">
+            <p className="font-medium text-gray-900">
+              {timestampProgress.running
+                ? "Probíhá…"
+                : timestampResult?.dry_run
+                  ? "Náhled"
+                  : "Hotovo"}
+              {selectedCourseId && (
+                <>
+                  {" – kurz "}
+                  <code>{selectedCourseId}</code>
+                </>
+              )}
+            </p>
+            {timestampProgress.processed === 0 &&
+            !timestampProgress.running &&
+            timestampProgress.remaining === 0 ? (
+              <p className="text-gray-700">
+                Žádné řádky k doplnění — všechny záznamy už mají časová
+                razítka. Pro přepsání rozbitých nulových hodnot zaškrtni
+                <strong> Re-run i na již zpracovaná data</strong>.
+              </p>
+            ) : (
+              <ul className="text-gray-700 list-disc list-inside">
+                <li>Zpracováno: {timestampProgress.processed}</li>
+                <li>Lesson filled: {timestampProgress.lessonFilled}</li>
+                <li>Quiz filled: {timestampProgress.quizFilled}</li>
+                {timestampProgress.remaining !== null && (
+                  <li>
+                    Zbývá: <strong>{timestampProgress.remaining}</strong>{" "}
+                    {timestampProgress.running && "(pokračuje další dávka…)"}
+                  </li>
+                )}
+                {timestampProgress.unresolved > 0 && (
+                  <li className="text-amber-700">
+                    Unresolved: {timestampProgress.unresolved}
+                  </li>
+                )}
+              </ul>
+            )}
+          </div>
+        )}
+        {backfillTimestamps.error && (
+          <p className="text-xs text-red-700">
+            Chyba: {(backfillTimestamps.error as Error).message}
+          </p>
+        )}
+      </div>
 
       {/* Error display */}
       {backfillRun.error && (

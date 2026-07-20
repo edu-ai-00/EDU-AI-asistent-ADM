@@ -1,26 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, FileSpreadsheet, Users, BarChart3, AlertCircle } from "lucide-react";
+import { Download, FileSpreadsheet, Users, AlertCircle } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api/client";
-import type { Course, EloInteraction } from "@/types/api";
+import type { Course } from "@/types/api";
 
-interface ExportEloDialogProps {
+interface ExportAnswersDialogProps {
   course: Course | null;
   onClose: () => void;
 }
 
-interface EloMeta {
-  total: number;
-  unique_users: number;
-  avg_score: number | null;
+interface AnswersMeta {
+  total_users: number;
+  total_answers: number;
 }
 
-export function ExportEloDialog({ course, onClose }: ExportEloDialogProps) {
-  const [meta, setMeta] = useState<EloMeta | null>(null);
+export function ExportAnswersDialog({ course, onClose }: ExportAnswersDialogProps) {
+  const [meta, setMeta] = useState<AnswersMeta | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,8 +35,8 @@ export function ExportEloDialog({ course, onClose }: ExportEloDialogProps) {
     setError(null);
 
     api
-      .getFullResponse<{ data: EloInteraction[]; meta: EloMeta }>(
-        `/admin/elo/interactions/course/${course.course_id}`
+      .getFullResponse<{ data: unknown[]; meta: AnswersMeta }>(
+        `/admin/progress/${course.course_id}/answers`
       )
       .then((res) => {
         setMeta(res.meta);
@@ -69,7 +68,7 @@ export function ExportEloDialog({ course, onClose }: ExportEloDialogProps) {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/admin/elo/interactions/course/${course.course_id}/export`,
+        `${API_BASE_URL}/admin/progress/${course.course_id}/answers/export`,
         { headers }
       );
 
@@ -81,7 +80,7 @@ export function ExportEloDialog({ course, onClose }: ExportEloDialogProps) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `elo-export-${course.course_id}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `odpovedi-${course.course_id}-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -96,11 +95,11 @@ export function ExportEloDialog({ course, onClose }: ExportEloDialogProps) {
   };
 
   return (
-    <Dialog open={!!course} onClose={onClose} title="Export ELO dat">
+    <Dialog open={!!course} onClose={onClose} title="Export odpovědí žáků">
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <LoadingSpinner size="sm" />
-          <span className="ml-2 text-sm text-gray-500">Načítání statistik...</span>
+          <span className="ml-2 text-sm text-gray-500">Načítání odpovědí...</span>
         </div>
       ) : error ? (
         <div className="flex items-center gap-2 text-red-600 text-sm py-4">
@@ -120,36 +119,31 @@ export function ExportEloDialog({ course, onClose }: ExportEloDialogProps) {
 
           {/* Stats */}
           {meta && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white rounded-lg border border-gray-200 px-3 py-2 text-center">
-                <FileSpreadsheet className="w-4 h-4 text-gray-400 mx-auto mb-1" />
-                <div className="text-lg font-semibold text-gray-900">{meta.total}</div>
-                <div className="text-xs text-gray-500">Záznamů</div>
-              </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="bg-white rounded-lg border border-gray-200 px-3 py-2 text-center">
                 <Users className="w-4 h-4 text-gray-400 mx-auto mb-1" />
-                <div className="text-lg font-semibold text-gray-900">{meta.unique_users}</div>
-                <div className="text-xs text-gray-500">Uživatelů</div>
+                <div className="text-lg font-semibold text-gray-900">{meta.total_users}</div>
+                <div className="text-xs text-gray-500">Žáků</div>
               </div>
               <div className="bg-white rounded-lg border border-gray-200 px-3 py-2 text-center">
-                <BarChart3 className="w-4 h-4 text-gray-400 mx-auto mb-1" />
-                <div className="text-lg font-semibold text-gray-900">
-                  {meta.avg_score !== null ? `${Math.round(meta.avg_score * 100)}%` : "—"}
-                </div>
-                <div className="text-xs text-gray-500">Prům. skóre</div>
+                <FileSpreadsheet className="w-4 h-4 text-gray-400 mx-auto mb-1" />
+                <div className="text-lg font-semibold text-gray-900">{meta.total_answers}</div>
+                <div className="text-xs text-gray-500">Odpovědí</div>
               </div>
             </div>
           )}
 
           {/* Column info */}
           <div className="text-xs text-gray-500 leading-relaxed">
-            CSV (TSV) obsahuje sloupce: ID žáka, ID třídy, Blok, Kurz, Zdroj, Skóre,
-            Dimenze, ELO snapshot, ELO úlohy, Den, Otevřeno, Potvrzeno, Doba.
+            CSV (TSV) obsahuje konkrétní volby a texty: ID žáka, Jméno, E-mail, ID třídy,
+            Lekce, Blok, Krok, Otázka, Typ otázky, Odpověď (ID možnosti),
+            Odpověď (text možnosti), Otevřená odpověď, Správně, Den, Otevřeno,
+            Potvrzeno, Doba. Zahrnuje i dotazníkové/postojové otázky bez „správně/špatně".
           </div>
 
-          {meta?.total === 0 && (
+          {meta?.total_answers === 0 && (
             <div className="text-sm text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-              Pro tento kurz nejsou žádná ELO data k exportu.
+              Pro tento kurz zatím nejsou žádné odpovědi k exportu.
             </div>
           )}
 
@@ -161,7 +155,7 @@ export function ExportEloDialog({ course, onClose }: ExportEloDialogProps) {
             <Button
               onClick={handleExport}
               isLoading={isExporting}
-              disabled={!meta || meta.total === 0}
+              disabled={!meta || meta.total_answers === 0}
             >
               <Download className="w-4 h-4" />
               Stáhnout CSV

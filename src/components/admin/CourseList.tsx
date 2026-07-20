@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { LoadingPage, LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { UploadCourseModal } from "./UploadCourseModal";
 import { ExportEloDialog } from "./ExportEloDialog";
+import { ExportAnswersDialog } from "./ExportAnswersDialog";
 import type { Course, DownloadResponse } from "@/types/api";
 import type { CourseV2 } from "@/types/block-v2";
 import { api } from "@/lib/api/client";
@@ -40,6 +41,8 @@ export function CourseList() {
   const [statusChangingId, setStatusChangingId] = useState<number | null>(null);
   // Export ELO dialog
   const [exportCourse, setExportCourse] = useState<Course | null>(null);
+  // Export answers (questionnaire) dialog
+  const [answersExportCourse, setAnswersExportCourse] = useState<Course | null>(null);
 
   if (isLoading) {
     return <LoadingPage message="Načítání kurzů..." />;
@@ -197,6 +200,7 @@ export function CourseList() {
                 onStatusChange={handleStatusChange}
                 onRestore={handleRestore}
                 onExport={setExportCourse}
+                onExportAnswers={setAnswersExportCourse}
               />
             </div>
           ))}
@@ -217,6 +221,11 @@ export function CourseList() {
       <ExportEloDialog
         course={exportCourse}
         onClose={() => setExportCourse(null)}
+      />
+
+      <ExportAnswersDialog
+        course={answersExportCourse}
+        onClose={() => setAnswersExportCourse(null)}
       />
     </div>
   );

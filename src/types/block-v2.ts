@@ -89,6 +89,7 @@ export interface QuestionConfig {
   type: QuestionType;
   options?: QuestionOption[];     // For multiple_choice AND true_false
   correct_answer?: string;        // For open questions
+  allow_photo?: boolean;          // For open questions: allow student to answer with a photo
   allow_multiple?: boolean;       // Allow selecting multiple options
   show_answers?: boolean;         // MCQ: show answer options to user (default true)
   correct_number?: number;        // Expected numeric answer (for numeric questions)
@@ -120,6 +121,9 @@ export interface CourseV2 {
   only_quiz?: boolean;         // Course runs only as a quiz — no lessons
   max_xp?: number;             // Maximum XP earnable from this course (hard cap)
   header_image?: HeaderImage;  // Course header/cover image
+  ai_context?: string;         // Didactic notes & common-mistake solutions for the AI tutor
+  stop_gambling?: boolean;     // Detect & stop rapid, random click-through of answers
+  stop_notice?: string;        // Message shown to students on gambling detection; empty → system default
   lessons: LessonV2[];
   // Optional: embedded blocks for self-contained export
   blocks?: BlockV2[];
@@ -136,6 +140,7 @@ export interface LessonV2 {
   description: string;
   order: number;
   header_image?: HeaderImage;  // Lesson header/cover image
+  ai_context?: string;         // Didactic notes & common-mistake solutions for the AI tutor
   blocks: LessonBlockBinding[];
 }
 
@@ -182,7 +187,7 @@ export interface BlockV2 {
   // Content - legacy flat fields (deprecated, use steps[] instead)
   content?: string;           // Markdown/HTML content (question text for question blocks)
   image?: StepImage;          // Optional image
-  video?: StepVideo;          // Optional YouTube video
+  video?: StepVideo;          // Optional video (direct MP4 URL)
 
   // Question configuration - legacy (deprecated, use question step in steps[] instead)
   question?: QuestionConfig;  // Answer options/logic (the content field holds the question text)

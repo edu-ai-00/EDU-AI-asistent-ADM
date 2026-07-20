@@ -42,7 +42,32 @@ function jsonHeaders(): HeadersInit {
   };
 }
 
+// Sent by the API's AdminMiddleware when the user is authenticated but lacks
+// admin privileges. Treated like a 401: kill the session and bounce to /login.
+const ADMIN_DENIED_MESSAGE = "Access denied. Insufficient privileges.";
+
+let unauthorizedHandled = false;
+
+async function handleUnauthorized(): Promise<void> {
+  if (typeof window === "undefined" || unauthorizedHandled) return;
+  unauthorizedHandled = true;
+  try {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+  } catch {
+    // ignore — cookies will still be cleared on redirect via server middleware
+  }
+  if (!window.location.pathname.startsWith("/login")) {
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.replace(`/login?next=${next}`);
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
+  if (response.status === 401) {
+    await handleUnauthorized();
+    throw new ApiError("Unauthenticated.", 401);
+  }
+
   const contentType = response.headers.get("content-type");
 
   if (!contentType?.includes("application/json")) {
@@ -56,6 +81,9 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     const errorResponse = json as LaravelErrorResponse;
+    if (response.status === 403 && errorResponse.message === ADMIN_DENIED_MESSAGE) {
+      await handleUnauthorized();
+    }
     throw new ApiError(
       errorResponse.message || "An error occurred",
       response.status,
@@ -85,12 +113,20 @@ export const api = {
       headers: jsonHeaders(),
       credentials: "same-origin",
     });
+    if (response.status === 401) {
+      await handleUnauthorized();
+      throw new ApiError("Unauthenticated.", 401);
+    }
     if (!response.ok) {
       const json = await response.json().catch(() => ({}));
+      const errorResponse = json as LaravelErrorResponse;
+      if (response.status === 403 && errorResponse.message === ADMIN_DENIED_MESSAGE) {
+        await handleUnauthorized();
+      }
       throw new ApiError(
-        (json as LaravelErrorResponse).message || "An error occurred",
+        errorResponse.message || "An error occurred",
         response.status,
-        (json as LaravelErrorResponse).errors,
+        errorResponse.errors,
       );
     }
     return response.json() as Promise<T>;

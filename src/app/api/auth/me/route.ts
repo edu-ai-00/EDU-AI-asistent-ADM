@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://app-api.edu-ai.eu/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const TOKEN_COOKIE = "edu-admin-token";
 

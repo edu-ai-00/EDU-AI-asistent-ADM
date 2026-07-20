@@ -27,9 +27,14 @@ const sanitizeSchema = {
       ...((defaultSchema.attributes && defaultSchema.attributes.div) || []),
       ["className", /^katex/, /^math/],
     ],
+    // Allow native <video> playback in preview.
+    video: ["src", "controls", "width", "height", "poster", "playsinline", "muted", "loop", "autoplay"],
+    source: ["src", "type"],
   },
   tagNames: [
     ...((defaultSchema.tagNames as string[]) || []),
+    "video",
+    "source",
     "math",
     "semantics",
     "mrow",

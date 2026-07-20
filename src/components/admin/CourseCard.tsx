@@ -36,9 +36,10 @@ interface CourseCardProps {
   onStatusChange?: (course: Course, status: Course["status"]) => void;
   onRestore?: (course: Course) => void;
   onExport?: (course: Course) => void;
+  onExportAnswers?: (course: Course) => void;
 }
 
-export function CourseCard({ course, gpfVectorName, onDelete, onUploadNewVersion, onEdit, onStatusChange, onRestore, onExport }: CourseCardProps) {
+export function CourseCard({ course, gpfVectorName, onDelete, onUploadNewVersion, onEdit, onStatusChange, onRestore, onExport, onExportAnswers }: CourseCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showStatusSubmenu, setShowStatusSubmenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -198,6 +199,10 @@ export function CourseCard({ course, gpfVectorName, onDelete, onUploadNewVersion
                           <button onClick={() => { closeMenu(); onExport?.(course); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                             <Download className="w-4 h-4" />
                             Export ELO CSV
+                          </button>
+                          <button onClick={() => { closeMenu(); onExportAnswers?.(course); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                            <Download className="w-4 h-4" />
+                            Export odpovědí CSV
                           </button>
                           <div className="border-t border-gray-100 my-1" />
                           <button onClick={() => { closeMenu(); onDelete?.(course.id); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">

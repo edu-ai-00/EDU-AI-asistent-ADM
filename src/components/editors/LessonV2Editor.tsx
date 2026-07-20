@@ -264,6 +264,24 @@ export function LessonV2Editor({
               )}
             </div>
 
+            {/* AI Context */}
+            <div className="col-span-2">
+              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                <FileText className="w-4 h-4 text-blue-500" />
+                AI context
+              </label>
+              <p className="text-xs text-gray-500 mb-1">
+                Didaktická doporučení a řešení obvyklých chyb — kontext pro AI tutora.
+              </p>
+              <textarea
+                value={lesson.ai_context || ""}
+                onChange={(e) => handleFieldChange("ai_context", e.target.value)}
+                rows={6}
+                placeholder="Didaktická doporučení, časté chyby studentů a jak je řešit…"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Lesson ID

@@ -158,11 +158,29 @@ export interface BlockTimestamp {
   confirmed_at?: string;
 }
 
+/** Per-block hint/help/assistant open tracking (BR-BBK5FP). Counts + first/last
+ * are kept for summaries; the *_events arrays hold one ISO timestamp per open. */
+export interface BlockHintHelpUsage {
+  hint_count?: number;
+  hint_first_ts?: string;
+  hint_last_ts?: string;
+  hint_events?: string[];
+  help_count?: number;
+  help_first_ts?: string;
+  help_last_ts?: string;
+  help_events?: string[];
+  assistant_count?: number;
+  assistant_first_ts?: string;
+  assistant_last_ts?: string;
+  assistant_events?: string[];
+}
+
 export interface CourseProgressLesson {
   lesson_id: string;
   completed_blocks?: string[];
   block_answers?: Record<string, string> | unknown[];
   block_timestamps?: Record<string, BlockTimestamp>;
+  hint_help_usage?: Record<string, BlockHintHelpUsage>;
   current_block_index?: number;
   step_progress?: Record<string, BlockStepProgress>;
   is_completed: boolean;
@@ -219,6 +237,25 @@ export interface AdminBookmark {
   created_at: string;
 }
 
+/** One FSRS practice pass-through (review) of a block (BR-DKDAPK).
+ * rating: 1=Nevím, 2=Připomeň, 3=Jde to, 4=Pamatuji. */
+export interface PracticeReviewLog {
+  block_id: string | null;
+  lesson_id: string | null;
+  course_id: string | null;
+  source_type: string | null;
+  rating: number;
+  response_time_sec: number | null;
+  shown_at: string | null;
+  reviewed_at: string | null;
+}
+
+/** One earned achievement (source of truth: user_achievements table). */
+export interface AdminAchievement {
+  id: string;
+  earned_at: string;
+}
+
 export interface AdminUserDetail {
   id: number;
   name: string;
@@ -239,6 +276,8 @@ export interface AdminUserDetail {
   progress?: UserProgress[];
   quiz_attempts?: QuizAttempt[];
   bookmarks?: AdminBookmark[];
+  practice_reviews?: PracticeReviewLog[];
+  achievements?: AdminAchievement[];
 }
 
 export interface UpdateUserInput {
@@ -370,4 +409,19 @@ export interface Asset {
 export interface AssetsResponse {
   data: Asset[];
   meta: { total: number; total_size: number };
+}
+
+// Active work-time report (BR-9SAH2R).
+export interface WorkTimeSession {
+  course_id: string;
+  start: string;
+  end: string;
+  duration: number;
+}
+
+export interface WorkTimeReport {
+  total_seconds: number;
+  by_course: Record<string, number>;
+  by_day: Record<string, number>;
+  sessions: WorkTimeSession[];
 }

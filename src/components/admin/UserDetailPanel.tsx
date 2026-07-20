@@ -38,7 +38,9 @@ import { ProgressTab } from "./user-detail/ProgressTab";
 import { SkillsTab } from "./user-detail/SkillsTab";
 import { EloTab } from "./user-detail/EloTab";
 import { ExercisesTab } from "./user-detail/ExercisesTab";
+import { AchievementsTab } from "./user-detail/AchievementsTab";
 import { SessionsSection } from "./user-detail/SessionsSection";
+import { WorkTimeTab } from "./WorkTimeTab";
 
 export function UserDetailPanel({ userId }: { userId: number }) {
   const { isTeacher } = useAuth();
@@ -88,10 +90,24 @@ export function UserDetailPanel({ userId }: { userId: number }) {
     if (quizOnly && pd?.quiz_completed) return true;
     return false;
   }).length;
-  const totalTime = user.courses.reduce(
+  // "Celkový čas": the course-level time_spent_seconds is only ever populated
+  // by the app from quiz completions and stays 0 for lessons / web users, so
+  // it's almost always empty. Recover the real time from its granular sources —
+  // per-quiz and per-lesson — and take the max so we never double-count when
+  // the course-level cache *is* set (it mirrors quiz time).
+  const courseTime = user.courses.reduce(
     (sum, c) => sum + (c.time_spent_seconds ?? 0),
     0,
   );
+  const quizTime = (user.quiz_attempts ?? []).reduce(
+    (sum, a) => sum + (a.time_spent_seconds ?? 0),
+    0,
+  );
+  const lessonTime = (user.progress ?? []).reduce(
+    (sum, p) => sum + (p.time_spent_seconds ?? 0),
+    0,
+  );
+  const totalTime = Math.max(courseTime, quizTime + lessonTime);
   const avgProgress =
     coursesEnrolled > 0
       ? Math.round(
@@ -228,10 +244,23 @@ export function UserDetailPanel({ userId }: { userId: number }) {
               active={activeTab === "bookmarks"}
               onClick={() => setActiveTab("bookmarks")}
               icon={Bookmark}
-              label="Cvičení"
+              label="Procvičování"
               count={user.bookmarks?.length ?? 0}
             />
           )}
+          <TabButton
+            active={activeTab === "achievements"}
+            onClick={() => setActiveTab("achievements")}
+            icon={Award}
+            label="Úspěchy"
+            count={user.achievements?.length ?? user.stats?.achievements_count ?? 0}
+          />
+          <TabButton
+            active={activeTab === "work"}
+            onClick={() => setActiveTab("work")}
+            icon={Clock}
+            label="Čas práce"
+          />
         </div>
         <div className="pt-4">
           {activeTab === "courses" && (
@@ -254,8 +283,16 @@ export function UserDetailPanel({ userId }: { userId: number }) {
             <ExercisesTab
               bookmarks={user.bookmarks ?? []}
               courses={user.courses}
+              practiceReviews={user.practice_reviews ?? []}
             />
           )}
+          {activeTab === "achievements" && (
+            <AchievementsTab
+              achievements={user.achievements ?? []}
+              achievementsCount={user.stats?.achievements_count ?? 0}
+            />
+          )}
+          {activeTab === "work" && <WorkTimeTab userId={userId} />}
         </div>
       </div>
 

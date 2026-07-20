@@ -16,6 +16,33 @@ export function LessonDetail({ lesson }: { lesson: CourseProgressLesson }) {
   const stepEntries = stepProgress ? Object.entries(stepProgress) : [];
   const hasTimestamps = Object.keys(blockTimestamps).length > 0;
 
+  // hint/help/asistent opens as one row per occurrence, e.g. "MIWQZKLSL5-hint"
+  // with its time, sorted chronologically (BR-BBK5FP).
+  const hintHelpUsage = lesson.hint_help_usage ?? {};
+  const eventKindLabel = { hint: "hint", help: "help", assistant: "asistent" } as const;
+  const eventKindClass = {
+    hint: "bg-blue-50 text-blue-700",
+    help: "bg-orange-50 text-orange-700",
+    assistant: "bg-purple-50 text-purple-700",
+  } as const;
+  const hintHelpRows = Object.entries(hintHelpUsage)
+    .flatMap(([blockId, u]) =>
+      (["hint", "help", "assistant"] as const).flatMap((kind) => {
+        const events = u[`${kind}_events`];
+        const first = u[`${kind}_first_ts`];
+        // Prefer per-occurrence timestamps; fall back to first_ts for older
+        // data synced before per-occurrence tracking existed.
+        const times =
+          events && events.length > 0 ? events : first ? [first] : [];
+        return times.map((ts) => ({
+          label: `${blockId}-${eventKindLabel[kind]}`,
+          kind,
+          ts,
+        }));
+      }),
+    )
+    .sort((a, b) => (a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0));
+
   const totalXp = stepEntries.reduce(
     (sum, [, sp]) => sum + (sp.earnedXp ?? 0),
     0,
@@ -236,6 +263,41 @@ export function LessonDetail({ lesson }: { lesson: CourseProgressLesson }) {
           )}
         </div>
       ) : null}
+
+      {/* Hint / help / assistant opens — one row per occurrence (BR-BBK5FP) */}
+      {hintHelpRows.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-gray-600 mb-1.5">
+            Nápověda / Pomoc / Asistent ({hintHelpRows.length})
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-[10px] font-medium text-gray-400 uppercase">
+                  <th className="pb-1.5 pr-3">Událost</th>
+                  <th className="pb-1.5 text-center">Čas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hintHelpRows.map((r, i) => (
+                  <tr key={`${r.label}-${i}`} className="border-t border-gray-100">
+                    <td className="py-1.5 pr-3">
+                      <span
+                        className={`inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.5 rounded ${eventKindClass[r.kind]}`}
+                      >
+                        {r.label}
+                      </span>
+                    </td>
+                    <td className="py-1.5 text-center text-gray-500 whitespace-nowrap">
+                      {formatTime(r.ts)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

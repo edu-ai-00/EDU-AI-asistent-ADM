@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   MessageSquare,
   MessagesSquare,
+  Newspaper,
   LogOut,
   Menu,
   X,
@@ -48,6 +49,7 @@ const adminSubItems: NavItem[] = [
   { href: "/admin/files", label: "Soubory", icon: FolderOpen, roles: ["admin"] },
   { href: "/admin/vectors", label: "Dovednosti", icon: Layers, roles: ["admin"] },
   { href: "/admin/feedback", label: "Zpětná vazba", icon: MessageSquare, roles: ["admin"] },
+  { href: "/admin/news", label: "Novinky", icon: Newspaper, roles: ["admin"] },
 ];
 
 function isNavItemActive(item: NavItem, pathname: string, searchParams: URLSearchParams): boolean {
