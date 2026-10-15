@@ -9,7 +9,7 @@ interface MarkdownTextareaProps {
   onChange: (value: string) => void;
   rows?: number;
   placeholder?: string;
-  label?: string;
+  label?: React.ReactNode;
   className?: string;
 }
 

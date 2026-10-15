@@ -125,8 +125,6 @@ export function BlockGPFEditor({
       <EloVectorsEditor
         relationVector={gpf.relation_vector}
         eloVector={gpf.elo_vector}
-        onRelationChange={(v) => onChange("relation_vector", v)}
-        onEloChange={(v) => onChange("elo_vector", v)}
         onBothChange={onBothEloChange}
         dimensions={vectorDimensions}
       />

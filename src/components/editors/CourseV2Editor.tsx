@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Image, GripVertical, Lock, FileText, BookOpen, Boxes, ShieldAlert } from "lucide-react";
+import { Plus, Trash2, Image, GripVertical, Lock, FileText, BookOpen, Boxes, ShieldAlert, Shuffle, Languages } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CourseV2, LessonV2, BlockV2, HeaderImage } from "@/types/block-v2";
 import {
@@ -11,6 +11,7 @@ import {
   createBlockV2,
 } from "@/lib/defaults";
 import { cn } from "@/lib/utils";
+import { useLanguages } from "@/hooks/useLanguages";
 
 interface CourseV2EditorProps {
   course: CourseV2;
@@ -19,6 +20,9 @@ interface CourseV2EditorProps {
 
 export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
   const [draggedLessonIndex, setDraggedLessonIndex] = useState<number | null>(null);
+  // Language picker reads the shared catalogue the API validates against
+  // (BR-AYACEK); inactive codes are included so an existing course keeps its own.
+  const { data: languages } = useLanguages(true);
 
   const handleFieldChange = (
     field: keyof CourseV2,
@@ -256,12 +260,41 @@ export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Language
               </label>
-              <input
-                type="text"
+              <select
                 value={course.language}
                 onChange={(e) => handleFieldChange("language", e.target.value)}
-                placeholder="cs, en, etc."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+              >
+                {/* A course may carry a language that has since been retired from
+                    the catalogue — keep it selectable so saving still works. */}
+                {languages?.some((l) => l.code === course.language) === false && (
+                  <option value={course.language}>{course.language}</option>
+                )}
+                {languages?.map((language) => (
+                  <option key={language.code} value={language.code}>
+                    {language.native_name} ({language.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Translation group (BR-AYACEK) */}
+            <div className="col-span-2">
+              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                <Languages className="w-4 h-4 text-blue-500" />
+                Jazyková skupina
+              </label>
+              <p className="text-xs text-gray-500 mb-1">
+                Kurzy se stejným klíčem jsou jazykové varianty téhož kurzu. Musí
+                mít shodnou strukturu — lišit se smí jen texty. Prázdné = kurz
+                stojí sám.
+              </p>
+              <input
+                type="text"
+                value={course.translation_key ?? ""}
+                onChange={(e) => handleFieldChange("translation_key", e.target.value)}
+                placeholder={course.course_id}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
               />
             </div>
 
@@ -370,6 +403,23 @@ export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
               </div>
             </div>
 
+            {/* Open All Lessons toggle */}
+            <div className="col-span-2 flex items-center gap-3">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={course.open_all_lessons || false}
+                  onChange={(e) => handleFieldChange("open_all_lessons", e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500" />
+              </label>
+              <div>
+                <span className="text-sm font-medium text-gray-700">Open All Lessons</span>
+                <p className="text-xs text-gray-500">All lessons unlocked from the start — student picks any order (default: lessons unlock one after another)</p>
+              </div>
+            </div>
+
             {/* Logged Only toggle */}
             <div className="col-span-2 flex items-center gap-3">
               <label className="relative inline-flex items-center cursor-pointer">
@@ -426,6 +476,52 @@ export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
                 <span className="text-sm font-medium text-gray-700">Only Quiz</span>
                 <p className="text-xs text-gray-500">Course runs only as a quiz — no lessons</p>
               </div>
+            </div>
+
+            {/* Shuffle Answers toggle — course-wide default for every question */}
+            <div className="flex items-center gap-3">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={course.shuffle_answers || false}
+                  onChange={(e) => handleFieldChange("shuffle_answers", e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500" />
+              </label>
+              <div>
+                <span className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                  <Shuffle className="w-4 h-4 text-blue-500" />
+                  Zamíchat odpovědi
+                </span>
+                <p className="text-xs text-gray-500">
+                  Výchozí pro všechny otázky s výběrem odpovědi. U jednotlivé otázky lze přepsat. Tlačítka Ano/Ne se nemíchají.
+                </p>
+              </div>
+            </div>
+
+            {/* Which attempt at an open question counts (BR-P745Q8) */}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Skóre otevřených otázek
+              </label>
+              <select
+                value={course.open_answer_score || "last"}
+                onChange={(e) =>
+                  handleFieldChange(
+                    "open_answer_score",
+                    e.target.value === "best" ? "best" : "last",
+                  )
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="last">Poslední pokus</option>
+                <option value="best">Nejlepší pokus</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Který pokus se počítá do progresu, když student odpovídá opakovaně.
+                Neúspěšné vyhodnocení (výpadek AI) se nepočítá ani do jednoho.
+              </p>
             </div>
 
             {/* XP Cap */}

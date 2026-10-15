@@ -7,9 +7,60 @@ import type { CourseV2 } from "./block-v2";
 // Course Types (from Laravel API)
 // ============================================================================
 
+// ============================================================================
+// Languages & translation groups (BR-AYACEK)
+// ============================================================================
+
+/** A language a course may be published in, from the shared catalogue. */
+export interface Language {
+  id: number;
+  code: string;
+  name: string;
+  native_name: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+/** A sibling language variant of a course, as returned by GET /courses/{id}. */
+export interface CourseTranslation {
+  id: number;
+  course_id: string;
+  language: string;
+  name: string;
+  version: number;
+  status: Course["status"];
+  /** False when this variant's structure has drifted from the one being viewed. */
+  in_sync: boolean;
+}
+
+/**
+ * Returned with a 422 when an upload's structure disagrees with a sibling
+ * language variant. `diff` lists the paths that diverged.
+ */
+export interface StructureConflict {
+  translation_key: string;
+  against: {
+    id: number;
+    course_id: string;
+    language: string;
+    name: string;
+    version: number;
+  };
+  diff: string[];
+}
+
 export interface Course {
   id: number;
   course_id: string;
+  /**
+   * Shared identity of this course's translation group. Language variants keep
+   * separate `course_id`s but share this key.
+   */
+  translation_key: string | null;
+  /** Fingerprint of the course structure; variants in sync share it. */
+  structure_hash: string | null;
+  /** Sibling variants — only present on the single-course endpoint. */
+  translations?: CourseTranslation[];
   code: string | null;
   pin: string | null;
   name: string;
@@ -35,6 +86,7 @@ export interface Course {
   only_once?: boolean;
   logged_only?: boolean;
   quiz_evaluate?: boolean;
+  open_all_lessons?: boolean;
   only_quiz?: boolean;
   // Aggregated stats from backend
   users_count?: number;
@@ -117,7 +169,8 @@ export interface AdminUser {
   login_code: string | null;
   avatar_index: number | null;
   selected_subjects: string[] | null;
-  classroom_id: number | null;
+  classroom_ids: number[];
+  classrooms: { id: number; name: string }[];
   classroom_name: string | null;
   email_verified_at: string | null;
   created_at: string;
@@ -127,6 +180,8 @@ export interface AdminUser {
   stats: AdminUserStats | null;
   is_guest: boolean;
   device_id: string | null;
+  /** Set while the account is switched off — no login path lets it in (BR-Q3ZJ6Q). */
+  deactivated_at: string | null;
 }
 
 export interface AdminUserDetailStats extends AdminUserStats {
@@ -231,10 +286,31 @@ export interface UserSessionInfo {
 export interface AdminBookmark {
   id: number;
   course_id: string;
+  /** Catalog name for course_id, or null when it resolves to no course —
+   * e.g. a per-device local id pushed by older app builds (BR-952UKZ). */
+  course_name: string | null;
   lesson_id: string;
   block_id: string;
   note: string | null;
   created_at: string;
+}
+
+/** One FSRS practice card — the user's practice deck as synced from clients.
+ * state: 0=new, 1=learning, 2=review, 3=relearning. */
+export interface AdminPracticeCard {
+  id: number;
+  course_id: string;
+  course_name: string | null;
+  lesson_id: string;
+  block_id: string;
+  source_type: string;
+  state: number;
+  due_date: string | null;
+  reps: number;
+  lapses: number;
+  last_review: string | null;
+  is_active: boolean;
+  updated_at: string;
 }
 
 /** One FSRS practice pass-through (review) of a block (BR-DKDAPK).
@@ -243,17 +319,12 @@ export interface PracticeReviewLog {
   block_id: string | null;
   lesson_id: string | null;
   course_id: string | null;
+  course_name: string | null;
   source_type: string | null;
   rating: number;
   response_time_sec: number | null;
   shown_at: string | null;
   reviewed_at: string | null;
-}
-
-/** One earned achievement (source of truth: user_achievements table). */
-export interface AdminAchievement {
-  id: string;
-  earned_at: string;
 }
 
 export interface AdminUserDetail {
@@ -264,27 +335,42 @@ export interface AdminUserDetail {
   login_code: string | null;
   avatar_index: number | null;
   selected_subjects: string[] | null;
-  classroom_id: number | null;
+  classroom_ids: number[];
+  classrooms: { id: number; name: string }[];
   classroom_name: string | null;
+  /** A team member's schools (BR-R84FVD); always empty for a student. */
+  school_ids?: number[];
+  /** The classes a team member teaches (BR-QKCBCT); always empty for a student. */
+  teaching_classroom_ids?: number[];
   email_verified_at: string | null;
   created_at: string;
   is_guest: boolean;
   device_id: string | null;
+  deactivated_at: string | null;
+  /** Who switched it off, from the audit trail; null when unknown or active. */
+  deactivated_by: { id: number; name: string } | null;
   stats: AdminUserDetailStats | null;
   courses: UserCourseInfo[];
   sessions: UserSessionInfo[];
   progress?: UserProgress[];
   quiz_attempts?: QuizAttempt[];
   bookmarks?: AdminBookmark[];
+  practice_cards?: AdminPracticeCard[];
   practice_reviews?: PracticeReviewLog[];
-  achievements?: AdminAchievement[];
 }
 
 export interface UpdateUserInput {
   name?: string;
   email?: string | null;
-  classroom_id?: number | null;
+  classroom_ids?: number[];
   role?: "student" | "teacher" | "admin";
+  /** Admin-only; the API ignores it from a teacher and for a student. */
+  school_ids?: number[];
+  /**
+   * The classes a team member teaches (BR-QKCBCT) — classroom_ids is where a
+   * pupil sits. Admin-only; the API ignores it from a teacher and for a student.
+   */
+  teaching_classroom_ids?: number[];
 }
 
 // ============================================================================
@@ -344,11 +430,96 @@ export interface QuizAttemptAnswer {
   selected_answer: string;
   is_correct: boolean;
   answered_at?: string;
+  // Open answers graded by AI (BR-FFVVYR)
+  evaluated_by_ai?: boolean;
+  ai_score?: number | null;
+  ai_feedback?: string | null;
+  ai_model?: string | null;
+}
+
+// ============================================================================
+// Open Answers (free-text answers from lessons/exercises, AI-graded)
+// ============================================================================
+
+/**
+ * The three-part formative feedback a student was shown (BR-P745Q8).
+ *
+ * Null on rows written before this shipped, and on rows whose evaluation
+ * failed — check `attempt_status` before assuming this is populated.
+ */
+export interface OpenAnswerFeedbackParts {
+  strengths?: string | null;
+  improvements?: string | null;
+  next_step?: string | null;
+  hint_question?: string | null;
+}
+
+/** Per-criterion internal score. Teacher-facing only. */
+export interface OpenAnswerCriterionScore {
+  id: string;
+  name?: string | null;
+  score: number;
+}
+
+/**
+ * What an attempt was judged against, snapshotted when it was evaluated.
+ *
+ * The point is that editing a question does not rewrite the history of answers
+ * already given: a teacher reading an old attempt sees the expected answer and
+ * criteria as they stood *then*, not as they stand now.
+ */
+export interface OpenAnswerGradingBasis {
+  question?: string | null;
+  expected_answer?: string | null;
+  solution?: string | null;
+  criteria?: { id: string; name: string; description?: string; weight?: number }[] | null;
+}
+
+export interface OpenAnswerEvaluation {
+  id: number;
+  user?: { id: number; name: string; email: string; classroom_ids?: number[]; classroom_name?: string | null };
+  course_id: string;
+  lesson_id?: string | null;
+  block_id: string;
+  step_id?: string | null;
+  answer_text: string;
+  evaluated_by_ai: boolean;
+  answered_at?: string | null;
+
+  // ─── BR-P745Q8 ────────────────────────────────────────────────────────────
+  feedback_parts?: OpenAnswerFeedbackParts | null;
+  /** "evaluated" — feedback was shown. "failed" — AI was unusable, student got a retry. */
+  attempt_status?: "evaluated" | "failed";
+  /** 1-based, per question. A retry appends; it never overwrites. */
+  attempt_number?: number;
+  has_photo?: boolean;
+
+  // ─── Teacher-only. The student API strips every field below. ──────────────
+  is_correct?: boolean;
+  ai_score?: number | null;
+  ai_feedback?: string | null;
+  criteria_scores?: OpenAnswerCriterionScore[] | null;
+  grading_basis?: OpenAnswerGradingBasis | null;
+  ai_model?: string | null;
+  prompt_version?: string | null;
+  teacher_override_score?: number | null;
+  /** API path serving the photographed answer. Never a public R2 URL. */
+  photo_url?: string | null;
+}
+
+export interface OpenAnswersResponse {
+  data: OpenAnswerEvaluation[];
+  meta?: {
+    total_answers: number;
+    unique_users?: number;
+    ai_evaluated: number;
+    failed_attempts?: number;
+  };
 }
 
 export interface QuizAttempt {
   id?: number;
-  user?: { id: number; name: string; email: string; classroom_id?: number | null };
+  user?: { id: number; name: string; email: string; classroom_ids?: number[]; classroom_name?: string | null };
   course_id?: string;
   total_questions: number;
   correct_answers: number;
@@ -394,9 +565,14 @@ export interface EloInteraction {
 // Asset Types (R2 file management)
 // ============================================================================
 
+/** Course-less asset folders (BR-KPXQA8). */
+export type AssetScope = "news";
+
 export interface Asset {
   id: number;
-  course_id: string;
+  /** Set for assets that live outside a course; null for course assets. */
+  scope: AssetScope | null;
+  course_id: string | null;
   filename: string;
   path: string;
   url: string;
@@ -424,4 +600,33 @@ export interface WorkTimeReport {
   by_course: Record<string, number>;
   by_day: Record<string, number>;
   sessions: WorkTimeSession[];
+}
+
+// ── Activity report (BR-AT7X2T) ──────────────────────────────────────────────
+
+/** One student × one local calendar day with any activity. */
+export interface ActivityRow {
+  user_id: number;
+  user_name: string;
+  classroom_ids: number[];
+  day: string;
+  work_seconds: number;
+  courses_visited: number;
+  blocks_visited: number;
+  practice_blocks: number;
+  quiz_blocks: number;
+  chats: number;
+  news_opened: number;
+  /** Outfit edits have no history yet — only shop purchases are counted. */
+  avatar_purchases: number;
+  games: number;
+  /** Current XP total, repeated on every row of the student. */
+  xp_points: number;
+}
+
+export interface ActivityReportMeta {
+  from: string | null;
+  to: string | null;
+  students: number;
+  timezone: string;
 }

@@ -120,7 +120,7 @@ export interface StudentSkillRow {
     id: number;
     name: string;
     email?: string | null;
-    classroom_id: number | null;
+    classroom_ids: number[];
     classroom_name?: string | null;
   };
   skills: ComputedSkill[];

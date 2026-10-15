@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Download, Save, BookOpen } from "lucide-react";
+import { Download, Save, BookOpen, Sparkles } from "lucide-react";
 
 interface ToolbarProps {
   filename: string | null;
   hasChanges: boolean;
   onExport: () => void;
   onSave: () => void;
+  /** AI Course Assistant (BR-D4PE8R) — V2 courses only. */
+  onGenerate?: () => void;
   importVersion?: "v1" | "v2" | null;
 }
 
@@ -16,6 +18,7 @@ export function Toolbar({
   hasChanges,
   onExport,
   onSave,
+  onGenerate,
   importVersion,
 }: ToolbarProps) {
   return (
@@ -50,6 +53,16 @@ export function Toolbar({
 
       {filename && (
         <div className="flex items-center gap-2">
+          {onGenerate && (
+            <button
+              onClick={onGenerate}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-700 hover:bg-purple-50 rounded-md"
+              title="Vygenerovat obsah z fotek nebo PDF"
+            >
+              <Sparkles className="w-4 h-4" />
+              Generovat
+            </button>
+          )}
           <button
             onClick={onSave}
             disabled={!hasChanges}

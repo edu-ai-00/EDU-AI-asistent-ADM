@@ -125,7 +125,7 @@ export default function LoginPage() {
             src="/logo.svg"
             alt="EDU Logo"
             width={120}
-            height={48}
+            height={35}
             className="mb-6"
             priority
           />

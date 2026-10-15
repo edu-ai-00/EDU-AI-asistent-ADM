@@ -61,9 +61,12 @@ export function EditorPanel({
       )}
 
       {/* V2 Editors */}
-      {selection?.version === "v2" && selection.type === "course_v2" && (
+      {/* Course-level settings edit the live course, not the selection snapshot:
+          a snapshot taken when the tree node was picked goes stale on save and
+          would roll the whole course (version included) back (BR-PKYUZC). */}
+      {selection?.version === "v2" && selection.type === "course_v2" && courseV2 && (
         <CourseV2Editor
-          course={selection.data as CourseV2}
+          course={courseV2}
           onChange={onCourseV2Change}
         />
       )}

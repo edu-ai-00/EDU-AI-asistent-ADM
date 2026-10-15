@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { writeSessionCookies } from "@/lib/server/auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-const TOKEN_COOKIE = "edu-admin-token";
-const USER_COOKIE = "edu-admin-user";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 /**
  * POST /api/auth/verify → proxy to Laravel /api/admin/auth/verify
  *
- * On success, sets two cookies:
- * - edu-admin-token: Sanctum bearer token (readable by API client)
+ * On success, sets the session cookies (lib/server/auth.ts):
+ * - edu-admin-token: Sanctum bearer token (httpOnly, read by the backend proxy)
+ * - edu-admin-token-refresh-at: when the proxy should rotate that token
  * - edu-admin-user: JSON {id, name, email, role} for UI
+ *
+ * All of them live exactly as long as the token, which the API issues for
+ * 48 hours (sanctum.admin_expiration_minutes, BR-CAMYRM). A fixed week used to outlive the
+ * token by six days, which is the state that let X-Admin-Key answer for the
+ * dead token and serve a teacher an admin's data (BR-4U7XUW); the proxy keeps
+ * them going while the panel is in use (BR-9SX9BC).
  */
 export async function POST(request: Request) {
   try {
@@ -33,27 +36,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Set cookies with the token and user data
-    const cookieStore = await cookies();
-    const cookieOptions = {
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax" as const,
-      maxAge: COOKIE_MAX_AGE,
-      path: "/",
-    };
-
-    // Token cookie — httpOnly so client JS cannot read it; backend calls go through /api/backend.
-    cookieStore.set(TOKEN_COOKIE, data.token, {
-      ...cookieOptions,
-      httpOnly: true,
-      sameSite: "strict",
-    });
-
-    // User cookie — JSON with user info for UI rendering (no secret material).
-    cookieStore.set(USER_COOKIE, JSON.stringify(data.user), {
-      ...cookieOptions,
-      httpOnly: false,
-    });
+    await writeSessionCookies(data, JSON.stringify(data.user));
 
     return NextResponse.json({ success: true, user: data.user });
   } catch (e) {

@@ -3,6 +3,7 @@
 import { Lightbulb, HelpCircle, Repeat } from "lucide-react";
 import type { BlockStep, BlockType, BlockV2 } from "@/types/block-v2";
 import { DEFAULT_QUESTION_CONFIG } from "@/lib/defaults";
+import { MarkdownTextarea } from "@/components/MarkdownTextarea";
 import { TextStepEditor } from "./steps/TextStepEditor";
 import { ImageStepEditor } from "./steps/ImageStepEditor";
 import { VideoStepEditor } from "./steps/VideoStepEditor";
@@ -105,32 +106,30 @@ export function StepEditor({
       {/* Step-level hint & help — only for non-exercise blocks (exercises use block-level hint/help) */}
       {blockType !== "exercise" && (
         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-          <div>
-            <label className="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
-              <Lightbulb className="w-3 h-3 text-yellow-500" />
-              Step Hint
-            </label>
-            <textarea
-              value={step.hint || ""}
-              onChange={(e) => onChange({ hint: e.target.value || undefined })}
-              rows={2}
-              placeholder="Short hint for this step..."
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-            />
-          </div>
-          <div>
-            <label className="flex items-center gap-1 text-xs font-medium text-gray-600 mb-1">
-              <HelpCircle className="w-3 h-3 text-blue-500" />
-              Step Help
-            </label>
-            <textarea
-              value={step.help || ""}
-              onChange={(e) => onChange({ help: e.target.value || undefined })}
-              rows={2}
-              placeholder="Detailed help for this step..."
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-            />
-          </div>
+          <MarkdownTextarea
+            value={step.hint || ""}
+            onChange={(v) => onChange({ hint: v || undefined })}
+            rows={3}
+            placeholder="Short hint for this step..."
+            label={
+              <span className="flex items-center gap-1 text-xs font-medium text-gray-600">
+                <Lightbulb className="w-3 h-3 text-yellow-500" />
+                Step Hint
+              </span>
+            }
+          />
+          <MarkdownTextarea
+            value={step.help || ""}
+            onChange={(v) => onChange({ help: v || undefined })}
+            rows={3}
+            placeholder="Detailed help for this step..."
+            label={
+              <span className="flex items-center gap-1 text-xs font-medium text-gray-600">
+                <HelpCircle className="w-3 h-3 text-blue-500" />
+                Step Help
+              </span>
+            }
+          />
         </div>
       )}
     </div>

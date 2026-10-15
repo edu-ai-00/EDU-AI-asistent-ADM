@@ -8,11 +8,18 @@ import type { Teacher } from "@/types/classroom";
 interface ClassroomTeachersSectionProps {
   classroomId: number;
   teachers: Teacher[];
+  /**
+   * Admins assign teachers to classes; teachers only see who else teaches
+   * theirs. The API enforces the same rule — this just keeps controls a
+   * teacher cannot use off the screen (BR-38FYMX).
+   */
+  canManage?: boolean;
 }
 
 export function ClassroomTeachersSection({
   classroomId,
   teachers,
+  canManage = true,
 }: ClassroomTeachersSectionProps) {
   const updateMutation = useUpdateClassroom();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,10 +44,12 @@ export function ClassroomTeachersSection({
         <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
           Přiřazení učitelé
         </h3>
-        <Button size="sm" variant="secondary" onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-3.5 h-3.5" />
-          Přidat učitele
-        </Button>
+        {canManage && (
+          <Button size="sm" variant="secondary" onClick={() => setIsModalOpen(true)}>
+            <Plus className="w-3.5 h-3.5" />
+            Přidat učitele
+          </Button>
+        )}
       </div>
 
       {teachers.length === 0 ? (
@@ -66,14 +75,16 @@ export function ClassroomTeachersSection({
                   )}
                 </div>
               </div>
-              <button
-                onClick={() => handleRemove(t.id)}
-                disabled={updateMutation.isPending}
-                className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                title="Odebrat učitele"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              {canManage && (
+                <button
+                  onClick={() => handleRemove(t.id)}
+                  disabled={updateMutation.isPending}
+                  className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                  title="Odebrat učitele"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>

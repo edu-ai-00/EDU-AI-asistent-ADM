@@ -145,7 +145,7 @@ export default function CourseSkillsOverviewPage({
     if (!overview || !filteredStudents.length) return;
 
     const header = [
-      "Jméno",
+      "Přezdívka",
       "Email",
       "Třída",
       ...overview.skill_names,

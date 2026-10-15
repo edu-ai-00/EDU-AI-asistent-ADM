@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { BarChart3, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  GPF_VECTOR_LENGTH,
+  dimensionsBySlot,
+  gpfSlotNumber,
+  isEloRating,
+  isRelationValue,
+} from "@/lib/gpf-vectors";
 import type { VectorDimensionLabel } from "./types";
-
-const ELO_VECTOR_LENGTH = 35;
 
 const REL_COLORS: Record<number, string> = {
   0: "bg-gray-100 text-gray-400",
@@ -13,11 +18,12 @@ const REL_COLORS: Record<number, string> = {
   2: "bg-green-100 text-green-700",
 };
 
+/** A slot the app's ELO engine would reject (BR-S9SVNM). */
+const INVALID_COLORS = "bg-red-100 text-red-700 ring-1 ring-red-300";
+
 interface EloVectorsEditorProps {
   relationVector?: number[];
   eloVector?: number[];
-  onRelationChange: (v: number[] | undefined) => void;
-  onEloChange: (v: number[] | undefined) => void;
   onBothChange: (rel: number[] | undefined, elo: number[] | undefined) => void;
   dimensions?: VectorDimensionLabel[];
 }
@@ -25,33 +31,52 @@ interface EloVectorsEditorProps {
 export function EloVectorsEditor({
   relationVector,
   eloVector,
-  onRelationChange,
-  onEloChange,
   onBothChange,
   dimensions,
 }: EloVectorsEditorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasData = !!relationVector || !!eloVector;
 
-  const vectorLength = dimensions?.length || ELO_VECTOR_LENGTH;
-  const rel = relationVector || new Array(vectorLength).fill(0);
-  const elo = eloVector || new Array(vectorLength).fill(5.0);
+  // The app's ELO engine takes exactly 35 slots whatever vector the course
+  // uses for labels, so both vectors are always edited at that width: short
+  // ones are padded, long ones trimmed, and an edit never leaves a hole that
+  // would be saved as null (BR-S9SVNM). Slots are read as the numbers the app
+  // reads them as — imported courses store "2" for 2 (BR-6DRK92) — so an edit
+  // also writes the whole vector back as plain numbers.
+  const vectorLength = GPF_VECTOR_LENGTH;
+  const rel = Array.from({ length: vectorLength }, (_, i) => gpfSlotNumber(relationVector?.[i]) ?? 0);
+  const elo = Array.from({ length: vectorLength }, (_, i) => gpfSlotNumber(eloVector?.[i]) ?? 5.0);
+  const dimensionAt = dimensionsBySlot(dimensions);
 
+  // What is actually stored in a slot, so a null or a non-numeric string shows
+  // up red instead of being masked by the padding above. Slots past the end
+  // of a short vector are just padding, and the save dialog reports the length.
+  const storedRelation = (i: number): unknown =>
+    relationVector && i < relationVector.length ? relationVector[i] : 0;
+  const storedElo = (i: number): unknown =>
+    eloVector && i < eloVector.length ? eloVector[i] : 5.0;
+
+  // Always write both: a block with only one of the two vectors is skipped
+  // by the app's ELO update.
   const updateRelation = (index: number, value: number) => {
     const newVec = [...rel];
     newVec[index] = value;
-    onRelationChange(newVec);
+    onBothChange(newVec, elo);
   };
 
   const updateElo = (index: number, value: number) => {
     const newVec = [...elo];
     newVec[index] = value;
-    onEloChange(newVec);
+    onBothChange(rel, newVec);
   };
 
+  // 0 → 1 → 2 → 0; anything invalid restarts at 0.
+  const nextRelation = (stored: unknown) => {
+    const current = gpfSlotNumber(stored);
+    return current === 0 ? 1 : current === 1 ? 2 : 0;
+  };
   const cycleRelation = (index: number) => {
-    const next = ((rel[index] ?? 0) + 1) % 3;
-    updateRelation(index, next);
+    updateRelation(index, nextRelation(storedRelation(index)));
   };
 
   const fillDefaults = () => {
@@ -127,10 +152,17 @@ export function EloVectorsEditor({
             </div>
             {/* Rows */}
             {Array.from({ length: vectorLength }, (_, i) => {
-              const dim = dimensions?.[i];
-              const rv = rel[i] ?? 0;
-              const ev = elo[i] ?? 5.0;
-              const relLabel = rv === 0 ? "nesouvisí" : rv === 1 ? "slabá" : "silná";
+              const dim = dimensionAt.get(i);
+              const rv = rel[i];
+              const ev = elo[i];
+              const storedRv = storedRelation(i);
+              const relValid = isRelationValue(storedRv);
+              // null marks an unrated slot and is fine; it shows as the 5.0 default.
+              const storedEv = storedElo(i);
+              const eloValid = storedEv == null || isEloRating(storedEv);
+              const relLabel = !relValid
+                ? "neplatná"
+                : rv === 0 ? "nesouvisí" : rv === 1 ? "slabá" : "silná";
               return (
                 <div
                   key={i}
@@ -152,11 +184,13 @@ export function EloVectorsEditor({
                     onClick={() => cycleRelation(i)}
                     className={cn(
                       "w-16 shrink-0 h-6 text-[11px] font-semibold rounded transition-colors text-center",
-                      REL_COLORS[rv]
+                      relValid ? REL_COLORS[rv] : INVALID_COLORS
                     )}
-                    title={`Klikni pro změnu: ${relLabel} → ${rv === 2 ? "nesouvisí" : rv === 0 ? "slabá" : "silná"}`}
+                    title={`Klikni pro změnu: ${relLabel} → ${["nesouvisí", "slabá", "silná"][nextRelation(storedRv)]}`}
                   >
-                    {rv} {rv === 0 ? "—" : rv === 1 ? "slabá" : "silná"}
+                    {relValid
+                      ? `${rv} ${rv === 0 ? "—" : rv === 1 ? "slabá" : "silná"}`
+                      : `${JSON.stringify(storedRv) ?? "?"} !`}
                   </button>
                   <input
                     type="number"
@@ -168,7 +202,10 @@ export function EloVectorsEditor({
                     min={1}
                     max={10}
                     step={0.5}
-                    className="w-16 shrink-0 px-1.5 py-0.5 text-xs border border-gray-200 rounded font-mono text-center bg-white focus:border-indigo-400 focus:outline-none"
+                    className={cn(
+                      "w-16 shrink-0 px-1.5 py-0.5 text-xs border rounded font-mono text-center focus:border-indigo-400 focus:outline-none",
+                      eloValid ? "border-gray-200 bg-white" : "border-red-300 bg-red-50 text-red-700"
+                    )}
                   />
                 </div>
               );

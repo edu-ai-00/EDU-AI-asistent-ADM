@@ -6,6 +6,7 @@ import {
   useBackfillPreview,
   useBackfillRun,
   useBackfillTimestamps,
+  useRecalibrate,
   type BackfillPreview,
   type BackfillResult,
   type TimestampBackfillResult,
@@ -22,6 +23,7 @@ import {
   Zap,
   Clock,
   Timer,
+  Scale,
 } from "lucide-react";
 
 export default function EloBackfillPage() {
@@ -54,6 +56,18 @@ export default function EloBackfillPage() {
     running: false,
   });
 
+  // Task difficulty recalibration (BR-697NCA): totals across the paged calls.
+  const [recalibration, setRecalibration] = useState<{
+    blocksDone: number;
+    blocksTotal: number | null;
+    interactions: number;
+    applied: number;
+    changed: number;
+    dryRun: boolean;
+    running: boolean;
+    finished: boolean;
+  } | null>(null);
+
   const { data: courses, isLoading: coursesLoading } = useCourses();
   const {
     data: preview,
@@ -62,6 +76,58 @@ export default function EloBackfillPage() {
   } = useBackfillPreview(previewCourseId);
   const backfillRun = useBackfillRun();
   const backfillTimestamps = useBackfillTimestamps();
+  const recalibrate = useRecalibrate();
+
+  /**
+   * Replay every answer to the course's blocks and rebuild their difficulty.
+   * The server handles ~50 blocks per call (Cloudflare cuts at 120 s), so we
+   * loop on `next_offset` until `done`.
+   */
+  const handleRecalibrate = async (dryRun: boolean) => {
+    if (!selectedCourseId) return;
+
+    setRecalibration({
+      blocksDone: 0,
+      blocksTotal: null,
+      interactions: 0,
+      applied: 0,
+      changed: 0,
+      dryRun,
+      running: true,
+      finished: false,
+    });
+
+    // Safety net: at 50 blocks per call this covers 5 000 blocks.
+    const MAX_ITERATIONS = 100;
+
+    try {
+      let offset = 0;
+      for (let i = 0; i < MAX_ITERATIONS; i++) {
+        const result = await recalibrate.mutateAsync({
+          courseId: selectedCourseId,
+          offset,
+          dryRun,
+        });
+        setRecalibration((prev) =>
+          prev && {
+            ...prev,
+            blocksDone: prev.blocksDone + result.blocks_processed,
+            blocksTotal: result.blocks_total,
+            interactions: prev.interactions + result.interactions,
+            applied: prev.applied + result.applied,
+            changed: prev.changed + result.changed,
+            finished: result.done,
+          }
+        );
+        if (result.done) break;
+        offset = result.next_offset;
+      }
+    } catch {
+      // Error surfaces via recalibrate.error
+    } finally {
+      setRecalibration((prev) => prev && { ...prev, running: false });
+    }
+  };
 
   /**
    * Drive the timestamp backfill. The server processes at most ~1500 rows
@@ -385,6 +451,80 @@ export default function EloBackfillPage() {
         )}
       </div>
 
+      {/* Task difficulty recalibration (BR-697NCA) — rebuilds each block's
+          calibrated difficulty from every answer, in answer order. */}
+      <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <Scale className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Přepočítat obtížnost úloh
+            </h2>
+            <p className="text-xs text-gray-600 mt-1">
+              Pro každý blok kurzu začne od obtížnosti z obsahu kurzu a projde
+              všechny odpovědi žáků v pořadí, v jakém odpovídali (všechny školy,
+              třídy i jazykové verze). Obtížnost mění jen první pokus žáka o
+              blok; odpovědi učitelů a adminů se jen logují. Zapracuje i
+              odpovědi ze starších verzí aplikace.
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Opakované spuštění je bezpečné — dá stejný výsledek. Aplikace
+              dostane přepočtenou obtížnost, jen když je na serveru zapnuté{" "}
+              <code className="bg-gray-100 px-1 rounded">ELO_TASK_CALIBRATION</code>.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() => handleRecalibrate(true)}
+            variant="secondary"
+            size="sm"
+            disabled={!selectedCourseId || recalibration?.running}
+            isLoading={recalibration?.running && recalibration.dryRun}
+          >
+            <Eye className="w-4 h-4" />
+            Dry run
+          </Button>
+          <Button
+            onClick={() => handleRecalibrate(false)}
+            size="sm"
+            disabled={!selectedCourseId || recalibration?.running}
+            isLoading={recalibration?.running && !recalibration.dryRun}
+          >
+            <Play className="w-4 h-4" />
+            Přepočítat
+          </Button>
+        </div>
+        {recalibration && (
+          <div className="rounded-md bg-gray-50 border border-gray-200 p-3 text-xs space-y-1">
+            <p className="font-medium text-gray-900">
+              {recalibration.running
+                ? "Probíhá…"
+                : !recalibration.finished
+                  ? "Nedokončeno"
+                  : recalibration.dryRun
+                    ? "Náhled (nic se nezapsalo)"
+                    : "Hotovo"}
+            </p>
+            <ul className="text-gray-700 list-disc list-inside">
+              <li>
+                Bloky: {recalibration.blocksDone}
+                {recalibration.blocksTotal !== null &&
+                  ` / ${recalibration.blocksTotal}`}
+              </li>
+              <li>Odpovědi: {recalibration.interactions}</li>
+              <li>Změnily obtížnost: {recalibration.applied}</li>
+              <li>Změněné záznamy: {recalibration.changed}</li>
+            </ul>
+          </div>
+        )}
+        {recalibrate.error && (
+          <p className="text-xs text-red-700">
+            Chyba: {(recalibrate.error as Error).message}
+          </p>
+        )}
+      </div>
+
       {/* Error display */}
       {backfillRun.error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
@@ -515,7 +655,7 @@ function RunResults({ result }: { result: BackfillResult }) {
           <li>{result.users_processed} uživatelů zpracováno</li>
           <li>{result.interactions_created} interakcí vytvořeno</li>
           <li>{result.profiles_updated} profilů aktualizováno</li>
-          <li>{result.block_stats_updated} block stats aktualizováno</li>
+          <li>{result.block_stats_updated} bloků s přepočtenou obtížností</li>
         </ul>
       </div>
 

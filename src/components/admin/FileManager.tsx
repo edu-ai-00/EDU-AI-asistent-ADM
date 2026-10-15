@@ -20,6 +20,7 @@ import {
 import { LoadingPage, LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useCourses, useUploadCourse } from "@/hooks/useCourses";
 import { useAssets, useUploadAsset, useDeleteAsset } from "@/hooks/useAssets";
+import type { AssetFolder } from "@/hooks/useAssets";
 import type { Asset, DownloadResponse } from "@/types/api";
 import type { CourseV2, BlockV2, BlockStep } from "@/types/block-v2";
 import { api } from "@/lib/api/client";
@@ -47,6 +48,18 @@ function isAudio(mime: string) {
 }
 function isVideo(mime: string) {
   return mime.startsWith("video/");
+}
+
+/**
+ * Thumbnail URL for a file card (BR-TBN2T6). A file deleted and uploaded
+ * again under the same name keeps its URL — that is how lessons pick up the
+ * replacement — so the browser would keep showing the copy it already holds.
+ * The asset id is new on every upload, which makes the thumbnail a fresh
+ * request. The copyable URL stays clean.
+ */
+function previewUrl(asset: Asset): string {
+  const separator = asset.url.includes("?") ? "&" : "?";
+  return `${asset.url}${separator}v=${asset.id}`;
 }
 
 function filenameFromUrl(url: string): string {
@@ -253,7 +266,7 @@ function FileCard({
       <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
         {isImage(asset.mime_type) ? (
           <img
-            src={asset.url}
+            src={previewUrl(asset)}
             alt={asset.filename}
             className="w-full h-full object-cover"
           />
@@ -410,7 +423,7 @@ function AssetScanner({
 
         // Upload to R2
         const asset = await uploadMutation.mutateAsync({
-          courseId,
+          folder: { courseId },
           file,
         });
 
@@ -670,17 +683,31 @@ function AssetScanner({
 // Main FileManager component
 // ---------------------------------------------------------------------------
 
+/**
+ * Value used by the folder <select> for the course-less Novinky folder
+ * (BR-KPXQA8). Course options carry the bare course_id, so the prefix keeps
+ * the two kinds of folder apart.
+ */
+const NEWS_OPTION = "scope:news";
+
 export function FileManager() {
-  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+  const [selectedValue, setSelectedValue] = useState<string>("");
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const folder: AssetFolder | undefined =
+    selectedValue === NEWS_OPTION
+      ? { scope: "news" }
+      : selectedValue
+        ? { courseId: selectedValue }
+        : undefined;
 
   const { data: courses, isLoading: coursesLoading } = useCourses();
   const {
     data: assetsResponse,
     isLoading: assetsLoading,
-  } = useAssets(selectedCourseId || undefined);
+  } = useAssets(folder);
   const uploadMutation = useUploadAsset();
   const deleteMutation = useDeleteAsset();
 
@@ -693,14 +720,16 @@ export function FileManager() {
       )
     : assets;
 
-  // Find the numeric id for the selected course
-  const selectedCourse = courses?.find((c) => c.course_id === selectedCourseId);
+  // Find the numeric id for the selected course (undefined for scope folders)
+  const selectedCourse = folder?.courseId
+    ? courses?.find((c) => c.course_id === folder.courseId)
+    : undefined;
 
   // Handlers
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !selectedCourseId) return;
-    await uploadMutation.mutateAsync({ courseId: selectedCourseId, file });
+    if (!file || !folder) return;
+    await uploadMutation.mutateAsync({ folder, file });
     // Reset input so the same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -720,26 +749,29 @@ export function FileManager() {
 
   return (
     <div className="space-y-6">
-      {/* Course selector + upload */}
+      {/* Folder selector + upload */}
       <div className="flex flex-col sm:flex-row gap-4">
         <select
-          value={selectedCourseId}
+          value={selectedValue}
           onChange={(e) => {
-            setSelectedCourseId(e.target.value);
+            setSelectedValue(e.target.value);
             setSearch("");
           }}
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
         >
-          <option value="">Vyberte kurz…</option>
-          {courses?.map((c) => (
-            <option key={c.course_id} value={c.course_id}>
-              {c.emoji ? `${c.emoji} ` : ""}
-              {c.name} ({c.course_id})
-            </option>
-          ))}
+          <option value="">Vyberte složku…</option>
+          <option value={NEWS_OPTION}>📰 Novinky</option>
+          <optgroup label="Kurzy">
+            {courses?.map((c) => (
+              <option key={c.course_id} value={c.course_id}>
+                {c.emoji ? `${c.emoji} ` : ""}
+                {c.name} ({c.course_id})
+              </option>
+            ))}
+          </optgroup>
         </select>
 
-        {selectedCourseId && (
+        {folder && (
           <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
@@ -774,24 +806,24 @@ export function FileManager() {
       )}
 
       {/* Nothing selected */}
-      {!selectedCourseId && (
+      {!folder && (
         <div className="text-center py-16 text-gray-500">
-          Vyberte kurz pro zobrazení souborů
+          Vyberte složku pro zobrazení souborů
         </div>
       )}
 
-      {/* Course selected */}
-      {selectedCourseId && (
+      {/* Folder selected */}
+      {folder && (
         <>
           {assetsLoading ? (
             <LoadingPage />
           ) : (
             <>
-              {/* Asset Scanner */}
+              {/* Asset Scanner — course folders only */}
               {selectedCourse && (
                 <AssetScanner
-                  key={selectedCourseId}
-                  courseId={selectedCourseId}
+                  key={selectedCourse.course_id}
+                  courseId={selectedCourse.course_id}
                   courseNumericId={selectedCourse.id}
                   existingAssets={assets}
                 />

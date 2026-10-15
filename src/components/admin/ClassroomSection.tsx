@@ -17,6 +17,7 @@ import {
   ChevronRight,
   UserPlus,
   Eye,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -31,52 +32,80 @@ import {
   useAddStudents,
 } from "@/hooks/useClassrooms";
 import { useTeam } from "@/hooks/useTeam";
+import { useSchools } from "@/hooks/useSchools";
+import { useAuth } from "@/hooks/useAuth";
 import { generateStudents, classroomToText, classroomToCsv } from "@/lib/classroom";
+import { Dialog } from "@/components/ui/Dialog";
 import { CreateClassModal } from "./CreateClassModal";
 import { EditClassroomModal } from "./EditClassroomModal";
 import { AddStudentsModal } from "./AddStudentsModal";
 import { ClassroomCoursesSection } from "./ClassroomCoursesSection";
 import { ClassroomTeachersSection } from "./ClassroomTeachersSection";
 import { ClassroomSkillsSection } from "./ClassroomSkillsSection";
+import { SchoolFilterSelect } from "./SchoolFilterSelect";
+import { ALL_SCHOOLS, matchesSchool, schoolOptions } from "@/lib/school-filter";
 import type { Classroom, ClassStudent } from "@/types/classroom";
 
 // ---------------------------------------------------------------------------
 // ClassroomList
 // ---------------------------------------------------------------------------
 
+/** A class sits in at most one school; the school filter works on lists. */
+const schoolsOf = (c: Classroom) => (c.school ? [c.school] : []);
+
 function ClassroomList({
   classrooms,
   onSelect,
+  onBlocked,
   onNewClick,
 }: {
   classrooms: Classroom[];
   onSelect: (c: Classroom) => void;
+  onBlocked: (c: Classroom) => void;
   onNewClick: () => void;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  // Filter by school (BR-R84FVD). Options come from the listed classes, so a
+  // teacher gets it too — for them it spans their own and school-mates' classes.
+  const [schoolFilter, setSchoolFilter] = useState(ALL_SCHOOLS);
+
+  const filterSchools = useMemo(
+    () => schoolOptions(classrooms.map(schoolsOf)),
+    [classrooms]
+  );
 
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return classrooms;
+    const bySchool = classrooms.filter((c) => matchesSchool(schoolsOf(c), schoolFilter));
+    if (!searchQuery.trim()) return bySchool;
     const q = searchQuery.toLowerCase();
-    return classrooms.filter(
+    return bySchool.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
+        c.school?.name.toLowerCase().includes(q) ||
         c.teachers?.some((t) => t.name.toLowerCase().includes(q))
     );
-  }, [classrooms, searchQuery]);
+  }, [classrooms, searchQuery, schoolFilter]);
 
   return (
     <div>
       {/* Search + Create */}
       <div className="flex items-center justify-between mb-4">
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            type="search"
-            placeholder="Hledat třídu podle názvu..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+        <div className="flex items-center gap-2">
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              type="search"
+              placeholder="Hledat třídu podle názvu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <SchoolFilterSelect
+            options={filterSchools}
+            showUnfiled={classrooms.some((c) => !c.school)}
+            value={schoolFilter}
+            onChange={setSchoolFilter}
           />
         </div>
         <Button onClick={onNewClick}>
@@ -87,7 +116,7 @@ function ClassroomList({
 
       {filtered.length === 0 ? (
         <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-          {searchQuery ? (
+          {searchQuery || schoolFilter !== ALL_SCHOOLS ? (
             <p className="text-gray-600">Žádné třídy neodpovídají hledání</p>
           ) : (
             <>
@@ -102,6 +131,7 @@ function ClassroomList({
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <th className="px-4 py-3">Třída</th>
+                <th className="px-4 py-3">Škola</th>
                 <th className="px-4 py-3">Učitelé</th>
                 <th className="px-4 py-3 text-center">Žáků</th>
                 <th className="px-4 py-3">Vytvořeno</th>
@@ -109,14 +139,38 @@ function ClassroomList({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
+              {filtered.map((c) => {
+                // A colleague's class from the same school (BR-8QAWKP): listed
+                // so the teacher knows it exists, but muted and it opens a
+                // warning instead of the detail, which would 403 anyway.
+                const isForeign = c.is_own === false;
+
+                return (
                 <tr
                   key={c.id}
-                  onClick={() => onSelect(c)}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100"
+                  onClick={() => (isForeign ? onBlocked(c) : onSelect(c))}
+                  className={`transition-colors border-b border-gray-100 cursor-pointer ${
+                    isForeign ? "bg-gray-50/60 hover:bg-gray-100" : "hover:bg-gray-50"
+                  }`}
                 >
                   <td className="px-4 py-3">
-                    <span className="font-medium text-gray-900">{c.name}</span>
+                    <span
+                      className={`font-medium ${isForeign ? "text-gray-500" : "text-gray-900"}`}
+                    >
+                      {c.name}
+                    </span>
+                    {isForeign && (
+                      <span
+                        className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-gray-200 text-gray-600 align-middle"
+                        title="Cizí třída — detail není přístupný"
+                      >
+                        <Lock className="w-3 h-3" />
+                        Cizí třída
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {c.school?.name ?? <span className="text-gray-300">—</span>}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {c.teachers && c.teachers.length > 0
@@ -124,7 +178,13 @@ function ClassroomList({
                       : <span className="text-gray-300">—</span>}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        isForeign
+                          ? "bg-gray-200 text-gray-600"
+                          : "bg-purple-100 text-purple-800"
+                      }`}
+                    >
                       {c.students_count}
                     </span>
                   </td>
@@ -136,10 +196,15 @@ function ClassroomList({
                     })}
                   </td>
                   <td className="px-4 py-3">
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    {isForeign ? (
+                      <Lock className="w-4 h-4 text-gray-300" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                    )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -165,6 +230,7 @@ function ClassroomDetail({
 }) {
   const { data: classroom, isLoading, error } = useClassroom(classroomId);
   const deleteMutation = useDeleteClassroom();
+  const { isAdmin } = useAuth();
   const [copied, setCopied] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
@@ -247,6 +313,25 @@ function ClassroomDetail({
               month: "long",
               year: "numeric",
             })}
+            {classroom.join_code && (
+              <>
+                {" "}&middot;{" "}
+                Kód třídy{" "}
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(classroom.join_code!, "join_code")}
+                  title="Kopírovat kód třídy"
+                  className="inline-flex items-center gap-1 font-mono font-semibold tracking-widest text-gray-900 hover:text-blue-600"
+                >
+                  {classroom.join_code}
+                  {copied === "join_code" ? (
+                    <Check className="w-3.5 h-3.5 text-green-600" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </>
+            )}
           </p>
         </div>
         <Button variant="secondary" size="sm" onClick={onAddStudents}>
@@ -257,20 +342,25 @@ function ClassroomDetail({
           <Pencil className="w-3.5 h-3.5" />
           Upravit
         </Button>
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={handleDelete}
-          isLoading={deleteMutation.isPending}
-        >
-          <Trash2 className="w-4 h-4" />
-          Smazat
-        </Button>
+        {/* Deleting a class is the admin's call; the API refuses a teacher
+            too (BR-3JZWEY). */}
+        {isAdmin && (
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={handleDelete}
+            isLoading={deleteMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4" />
+            Smazat
+          </Button>
+        )}
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeSubTab} onValueChange={setSubTab} data-print-hide>
-        <TabsList className="mb-4">
+      {/* Tabs — print shows only the title and the student table, so hide
+          the parts around the table, never the Tabs wrapper that holds it */}
+      <Tabs value={activeSubTab} onValueChange={setSubTab}>
+        <TabsList className="mb-4" data-print-hide>
           <TabsTrigger value="students">Žáci</TabsTrigger>
           <TabsTrigger value="teachers">Učitelé</TabsTrigger>
           <TabsTrigger value="courses">Kurzy</TabsTrigger>
@@ -279,7 +369,7 @@ function ClassroomDetail({
 
         <TabsContent value="students">
           {/* Actions */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4" data-print-hide>
             <Button
               variant="secondary"
               size="sm"
@@ -324,7 +414,7 @@ function ClassroomDetail({
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <th className="px-4 py-3 w-12">#</th>
-                  <th className="px-4 py-3">Jméno</th>
+                  <th className="px-4 py-3">Přezdívka</th>
                   <th className="px-4 py-3">Kód</th>
                   <th className="px-4 py-3 text-center">Level</th>
                   <th className="px-4 py-3 text-center">Kurzy</th>
@@ -348,18 +438,19 @@ function ClassroomDetail({
           </div>
         </TabsContent>
 
-        <TabsContent value="teachers">
+        <TabsContent value="teachers" data-print-hide>
           <ClassroomTeachersSection
             classroomId={classroomId}
             teachers={teachers}
+            canManage={isAdmin}
           />
         </TabsContent>
 
-        <TabsContent value="courses">
+        <TabsContent value="courses" data-print-hide>
           <ClassroomCoursesSection classroomId={classroomId} />
         </TabsContent>
 
-        <TabsContent value="skills">
+        <TabsContent value="skills" data-print-hide>
           <ClassroomSkillsSection classroomId={classroomId} />
         </TabsContent>
       </Tabs>
@@ -457,6 +548,7 @@ function StudentRow({
 export function ClassroomSection() {
   const { data: classrooms, isLoading, error } = useClassrooms();
   const { data: teamMembers } = useTeam();
+  const { data: schools } = useSchools();
   const createMutation = useCreateClassroom();
   const updateMutation = useUpdateClassroom();
   const addStudentsMutation = useAddStudents();
@@ -486,16 +578,23 @@ export function ClassroomSection() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddStudentsModalOpen, setIsAddStudentsModalOpen] = useState(false);
+  const [blockedClassroom, setBlockedClassroom] = useState<Classroom | null>(null);
 
   const teachers = teamMembers ?? [];
 
-  function handleCreate(name: string, count: number, teacherIds: number[]) {
+  function handleCreate(
+    name: string,
+    count: number,
+    teacherIds: number[],
+    schoolId: number | null
+  ) {
     const students = generateStudents(count);
     createMutation.mutate(
       {
         name,
         students,
         teacher_ids: teacherIds.length > 0 ? teacherIds : undefined,
+        school_id: schoolId ?? undefined,
       },
       {
         onSuccess: (created) => {
@@ -506,10 +605,10 @@ export function ClassroomSection() {
     );
   }
 
-  function handleUpdate(name: string) {
+  function handleUpdate(name: string, joinCode: string | null) {
     if (selectedId === null) return;
     updateMutation.mutate(
-      { id: selectedId, name },
+      { id: selectedId, name, join_code: joinCode },
       {
         onSuccess: () => {
           setIsEditModalOpen(false);
@@ -534,6 +633,19 @@ export function ClassroomSection() {
   // Get the selected classroom from the list data (for EditModal pre-fill)
   const selectedClassroom = classrooms?.find((c) => c.id === selectedId);
 
+  // A school-mate's class reached by a pasted ?classroom= link rather than a
+  // click. The detail request would 403; show the same warning instead
+  // (BR-8QAWKP). Only decided once the list has loaded — until then
+  // selectedClassroom is undefined for every id, including the teacher's own.
+  if (selectedId !== null && classrooms && selectedClassroom?.is_own === false) {
+    return (
+      <ForeignClassroomWarning
+        classroom={selectedClassroom}
+        onClose={() => setSelectedId(null)}
+      />
+    );
+  }
+
   if (selectedId !== null) {
     return (
       <>
@@ -548,9 +660,13 @@ export function ClassroomSection() {
           <EditClassroomModal
             isOpen={isEditModalOpen}
             classroom={selectedClassroom}
-            onClose={() => setIsEditModalOpen(false)}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              updateMutation.reset();
+            }}
             onSave={handleUpdate}
             isLoading={updateMutation.isPending}
+            serverError={updateMutation.error?.message ?? null}
           />
         )}
 
@@ -583,8 +699,37 @@ export function ClassroomSection() {
       <ClassroomList
         classrooms={classrooms ?? []}
         onSelect={(c) => setSelectedId(c.id)}
+        onBlocked={(c) => setBlockedClassroom(c)}
         onNewClick={() => setIsCreateModalOpen(true)}
       />
+
+      <Dialog
+        open={blockedClassroom !== null}
+        onClose={() => setBlockedClassroom(null)}
+        title="Cizí třída"
+      >
+        <div className="flex gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="text-sm text-gray-600 space-y-2">
+            <p>
+              Třídu <strong className="text-gray-900">{blockedClassroom?.name}</strong>{" "}
+              učí někdo jiný
+              {blockedClassroom?.school ? ` na škole ${blockedClassroom.school.name}` : ""}.
+              Vidíte ji v seznamu, ale její detail ani údaje o žácích si zobrazit
+              nemůžete.
+            </p>
+            <p>
+              Pokud potřebujete přístup, požádejte administrátora, aby vás ke
+              třídě přiřadil.
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-end mt-4">
+          <Button variant="secondary" onClick={() => setBlockedClassroom(null)}>
+            Rozumím
+          </Button>
+        </div>
+      </Dialog>
 
       <CreateClassModal
         isOpen={isCreateModalOpen}
@@ -592,7 +737,40 @@ export function ClassroomSection() {
         onCreate={handleCreate}
         isLoading={createMutation.isPending}
         teachers={teachers}
+        schools={schools ?? []}
       />
+    </div>
+  );
+}
+
+/**
+ * Full-page twin of the warning dialog, for when a school-mate's class is
+ * reached by URL rather than by clicking a muted row.
+ */
+function ForeignClassroomWarning({
+  classroom,
+  onClose,
+}: {
+  classroom: Classroom;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 text-center">
+      <AlertCircle className="w-12 h-12 text-amber-500" />
+      <div>
+        <p className="text-gray-900 font-medium">
+          Třída {classroom.name} není vaše
+        </p>
+        <p className="text-gray-600 mt-1 max-w-md">
+          Učí ji někdo jiný
+          {classroom.school ? ` na škole ${classroom.school.name}` : ""}. Detail
+          třídy ani údaje o žácích si zobrazit nemůžete.
+        </p>
+      </div>
+      <Button variant="secondary" onClick={onClose}>
+        <ArrowLeft className="w-4 h-4" />
+        Zpět na seznam tříd
+      </Button>
     </div>
   );
 }

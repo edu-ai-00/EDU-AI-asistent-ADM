@@ -18,6 +18,7 @@ import type {
 } from "@/types/block-v2";
 import { DEFAULT_FSRS, createBlockStep } from "@/lib/defaults";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MarkdownTextarea } from "@/components/MarkdownTextarea";
 import { BlockIdentificationEditor } from "./block-v2/BlockIdentificationEditor";
 import { BlockStepsEditor } from "./block-v2/BlockStepsEditor";
 import { BlockLearningEditor } from "./block-v2/BlockLearningEditor";
@@ -144,32 +145,30 @@ export function BlockV2Editor({ block, onChange, onDelete, courseBlocks, vectorD
 
           {/* Hint & Help — available for all block types */}
           <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200">
-            <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
-                <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />
-                Hint (shown on ? click)
-              </label>
-              <textarea
-                value={block.hint || ""}
-                onChange={(e) => handleFieldChange("hint", e.target.value || undefined)}
-                rows={2}
-                placeholder="Short hint to help the student..."
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
-              />
-            </div>
-            <div>
-              <label className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
-                <HelpCircle className="w-3.5 h-3.5 text-blue-500" />
-                Help (detailed explanation)
-              </label>
-              <textarea
-                value={block.help || ""}
-                onChange={(e) => handleFieldChange("help", e.target.value || undefined)}
-                rows={2}
-                placeholder="Detailed help or explanation..."
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
-              />
-            </div>
+            <MarkdownTextarea
+              value={block.hint || ""}
+              onChange={(v) => handleFieldChange("hint", v || undefined)}
+              rows={3}
+              placeholder="Short hint to help the student..."
+              label={
+                <span className="flex items-center gap-1">
+                  <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />
+                  Hint (shown on ? click)
+                </span>
+              }
+            />
+            <MarkdownTextarea
+              value={block.help || ""}
+              onChange={(v) => handleFieldChange("help", v || undefined)}
+              rows={3}
+              placeholder="Detailed help or explanation..."
+              label={
+                <span className="flex items-center gap-1">
+                  <HelpCircle className="w-3.5 h-3.5 text-blue-500" />
+                  Help (detailed explanation)
+                </span>
+              }
+            />
           </div>
         </TabsContent>
 

@@ -33,6 +33,7 @@ export interface BackfillResult {
   users_processed: number;
   interactions_created: number;
   profiles_updated: number;
+  /** Blocks that gained an interaction and were recalibrated (BR-697NCA). */
   block_stats_updated: number;
   errors: Array<{ user_id: number; error: string }>;
   details: BackfillResultDetail[];
@@ -125,6 +126,56 @@ export function useBackfillTimestamps() {
       const qs = params.toString();
       return api.post<TimestampBackfillResult>(
         `/admin/elo/backfill/timestamps/${courseId}${qs ? `?${qs}` : ""}`,
+        {}
+      );
+    },
+  });
+}
+
+// ─── Task difficulty recalibration (BR-697NCA) ───────────────────────────────
+
+/**
+ * Result of POST /admin/elo/recalibrate/{courseId}.
+ *
+ * The server replays every answer to each block of the course in answer
+ * order and rebuilds the block's difficulty (D) and update counts. It pages
+ * through the course's blocks: call again with `offset = next_offset` until
+ * `done`.
+ */
+export interface RecalibrateResult {
+  course_id: string;
+  offset: number;
+  /** Blocks of the course that carry GPF vectors. */
+  blocks_total: number;
+  /** Blocks handled by this call. */
+  blocks_processed: number;
+  next_offset: number;
+  done: boolean;
+  /** Answers replayed. */
+  interactions: number;
+  /** Answers that moved D (first attempts of students with a rating). */
+  applied: number;
+  /** Interaction rows whose stored outcome changed. */
+  changed: number;
+  dry_run: boolean;
+}
+
+export function useRecalibrate() {
+  return useMutation({
+    mutationFn: ({
+      courseId,
+      offset,
+      dryRun,
+    }: {
+      courseId: string;
+      offset: number;
+      /** Compute the numbers, write nothing. */
+      dryRun?: boolean;
+    }) => {
+      const params = new URLSearchParams({ offset: String(offset) });
+      if (dryRun) params.set("dry_run", "1");
+      return api.post<RecalibrateResult>(
+        `/admin/elo/recalibrate/${courseId}?${params.toString()}`,
         {}
       );
     },

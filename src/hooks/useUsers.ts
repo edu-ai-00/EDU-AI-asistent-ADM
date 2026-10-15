@@ -83,6 +83,54 @@ export function useUpdateUser() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users", variables.id] });
       queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      // A role or school change here moves the person on the Učitelé and
+      // Školy tabs too (BR-R84FVD).
+      queryClient.invalidateQueries({ queryKey: ["team"] });
+      queryClient.invalidateQueries({ queryKey: ["schools"] });
+    },
+  });
+}
+
+/**
+ * Switch an account off or back on (BR-Q3ZJ6Q). Admin-only on the API.
+ * Deactivating revokes every session the account holds; its data stays.
+ * The team roster lists the same accounts, so it is refreshed too.
+ */
+export function useSetUserActive() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, active }: { id: number; active: boolean }) =>
+      api.post<{ id: number; deactivated_at: string | null }>(
+        `/admin/users/${id}/${active ? "reactivate" : "deactivate"}`,
+        {},
+      ),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["users", variables.id] });
+      queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      queryClient.invalidateQueries({ queryKey: ["team"] });
+    },
+  });
+}
+
+/**
+ * Delete a student and their whole history (BR-FXWJ8D). Admin-only on the
+ * API, students only, irreversible. The deleted account's own detail query
+ * is left alone — refetching it would only 404 under the page that is
+ * navigating away — while lists and class rosters drop the student.
+ */
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => api.delete<void>(`/admin/users/${id}`),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({
+        queryKey: USERS_KEY,
+        predicate: (query) => query.queryKey[1] !== id,
+      });
+      queryClient.invalidateQueries({ queryKey: ["classrooms"] });
+      queryClient.invalidateQueries({ queryKey: ["activity"] });
     },
   });
 }

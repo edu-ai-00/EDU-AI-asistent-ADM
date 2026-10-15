@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -16,8 +16,9 @@ import { useChatSession, useChatReply } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { LoadingPage, LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/Button";
-import { PERSONA_LABELS } from "@/types/chat";
-import type { ChatMessage, ChatPersona } from "@/types/chat";
+import { useMentors } from "@/hooks/useMentors";
+import { personaColor, personaLabel } from "@/types/chat";
+import type { ChatMessage } from "@/types/chat";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -29,13 +30,6 @@ function formatTime(dateString: string): string {
     minute: "2-digit",
   });
 }
-
-const PERSONA_COLORS: Record<ChatPersona, string> = {
-  ai_teacher: "bg-blue-100 text-blue-800",
-  math_mentor: "bg-green-100 text-green-800",
-  study_coach: "bg-amber-100 text-amber-800",
-  language_mentor: "bg-purple-100 text-purple-800",
-};
 
 function isTeacherMessage(msg: ChatMessage): boolean {
   return msg.metadata?.sent_by === "teacher";
@@ -174,6 +168,11 @@ export function ChatDetail({ sessionId }: { sessionId: number }) {
   const router = useRouter();
   const { user } = useAuth();
   const { data: session, isLoading, error } = useChatSession(sessionId);
+  const { data: mentors } = useMentors();
+  const mentorNames = useMemo(
+    () => Object.fromEntries((mentors ?? []).map((m) => [m.slug, m.name])),
+    [mentors]
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when messages load or change
@@ -224,9 +223,9 @@ export function ChatDetail({ sessionId }: { sessionId: number }) {
               <User className="w-3.5 h-3.5" />
               {session.user.name}
             </span>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${PERSONA_COLORS[session.persona]}`}>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${personaColor(session.persona)}`}>
               <Bot className="w-3 h-3" />
-              {PERSONA_LABELS[session.persona]}
+              {personaLabel(session.persona, mentorNames)}
             </span>
             <span className="text-gray-400">
               {session.messages.length} zpráv

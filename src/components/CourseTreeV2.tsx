@@ -611,6 +611,28 @@ function BlockV2Item({
     onMenuToggle?.(null);
   };
 
+  const handleAddBlockBelow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!course || !onCourseChange) return;
+    const newBlock = createBlockV2();
+    const newBlocks = [...(course.blocks || []), newBlock];
+
+    let newLessons = course.lessons;
+    if (lessonId) {
+      newLessons = course.lessons.map((l) => {
+        if (l.lesson_id !== lessonId) return l;
+        const idx = l.blocks.findIndex((b) => b.block_id === block.block_id);
+        const newBindings = [...l.blocks];
+        newBindings.splice(idx + 1, 0, { block_id: newBlock.block_id, order: idx + 2 });
+        return { ...l, blocks: newBindings.map((b, i) => ({ ...b, order: i + 1 })) };
+      });
+    }
+
+    onCourseChange({ ...course, blocks: newBlocks, lessons: newLessons });
+    onMenuToggle?.(null);
+    onSelect("block_v2", newBlock.block_id, newBlock, lessonId);
+  };
+
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!course || !onCourseChange) return;
@@ -676,6 +698,7 @@ function BlockV2Item({
             {isMenuOpen && (
               <BlockContextMenu
                 block={block}
+                onAddBlock={handleAddBlockBelow}
                 onDuplicate={handleDuplicate}
                 onDelete={handleDelete}
                 onExport={(e) => {
@@ -803,6 +826,7 @@ function ExportBlockModal({
 
 function BlockContextMenu({
   block,
+  onAddBlock,
   onDuplicate,
   onDelete,
   onExport,
@@ -810,6 +834,7 @@ function BlockContextMenu({
   onClose,
 }: {
   block: BlockV2;
+  onAddBlock: (e: React.MouseEvent) => void;
   onDuplicate: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
   onExport: (e: React.MouseEvent) => void;
@@ -835,6 +860,13 @@ function BlockContextMenu({
       ref={menuRef}
       className="absolute right-0 top-full mt-1 z-30 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
     >
+      <button
+        onClick={onAddBlock}
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 text-left"
+      >
+        <Plus className="w-3.5 h-3.5" />
+        Nový blok
+      </button>
       <button
         onClick={onDuplicate}
         className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 text-left"
@@ -1047,6 +1079,16 @@ function OrphanBlocksSection({
                     {openMenuBlockId === block.block_id && (
                       <BlockContextMenu
                         block={block}
+                        onAddBlock={(e) => {
+                          e.stopPropagation();
+                          const newBlock = createBlockV2();
+                          const allBlocks = [...(course.blocks || [])];
+                          const idx = allBlocks.findIndex((b) => b.block_id === block.block_id);
+                          allBlocks.splice(idx + 1, 0, newBlock);
+                          onCourseChange({ ...course, blocks: allBlocks });
+                          onMenuToggle(null);
+                          onSelect("block_v2", newBlock.block_id, newBlock);
+                        }}
                         onDuplicate={(e) => {
                           e.stopPropagation();
                           const dup = duplicateBlockV2(block);

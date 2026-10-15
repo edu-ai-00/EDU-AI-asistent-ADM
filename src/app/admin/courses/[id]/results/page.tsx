@@ -18,14 +18,19 @@ import {
   XCircle,
   Clock,
   Trophy,
+  Sparkles,
+  MessageSquareText,
+  AlertTriangle,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useCourse, useCourseData } from "@/hooks/useCourses";
 import { useCourseProgress, useCourseProgressStats } from "@/hooks/useProgress";
 import { useQuizAttempts } from "@/hooks/useQuizAttempts";
+import { useOpenAnswers } from "@/hooks/useOpenAnswers";
 import { LoadingPage, LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { BlockV2, LessonV2 } from "@/types/block-v2";
-import type { BlockStats, QuizAttempt, QuizAttemptAnswer, QuizAttemptsResponse, UserProgress } from "@/types/api";
+import type { BlockStats, OpenAnswersResponse, QuizAttempt, QuizAttemptAnswer, QuizAttemptsResponse, UserProgress } from "@/types/api";
 
 // ============================================================================
 // Helpers
@@ -127,7 +132,8 @@ function QuestionDetail({ block }: { block: BlockV2 }) {
     return (
       <div className="mt-2 text-xs text-gray-500">
         Očekávaná odpověď:{" "}
-        <span className="font-mono bg-gray-100 px-1 rounded">
+        {/* Variants sit one per line (BR-RBUR29) — keep them apart. */}
+        <span className="font-mono bg-gray-100 px-1 rounded whitespace-pre-line">
           {q.correct_answer ?? "—"}
         </span>
       </div>
@@ -819,6 +825,179 @@ function UserAnswerRow({
 }
 
 // ============================================================================
+// Open Answers Tab (free-text answers from lessons/exercises, AI-graded)
+// ============================================================================
+
+function OpenAnswersCourseTab({
+  data,
+  isLoading,
+}: {
+  data: OpenAnswersResponse | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <LoadingSpinner size="sm" />
+      </div>
+    );
+  }
+
+  const rows = data?.data ?? [];
+
+  if (rows.length === 0) {
+    return (
+      <p className="text-sm text-gray-400 italic py-8 text-center">
+        Zatím žádné otevřené odpovědi
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3 text-xs text-gray-500">
+        <span>{data?.meta?.total_answers ?? rows.length} odpovědí</span>
+        {data?.meta?.unique_users != null && (
+          <>
+            <span className="text-gray-300">·</span>
+            <span>{data.meta.unique_users} žáků</span>
+          </>
+        )}
+        <span className="text-gray-300">·</span>
+        <span className="inline-flex items-center gap-1">
+          <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+          {data?.meta?.ai_evaluated ?? 0} hodnoceno AI
+        </span>
+        {(data?.meta?.failed_attempts ?? 0) > 0 && (
+          <>
+            <span className="text-gray-300">·</span>
+            <span className="inline-flex items-center gap-1 text-amber-700">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {data?.meta?.failed_attempts} nevyhodnoceno
+            </span>
+          </>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        {rows.map((r) => {
+          const score = r.teacher_override_score ?? r.ai_score;
+          const failed = r.attempt_status === "failed";
+          const parts = r.feedback_parts;
+
+          return (
+            <div
+              key={r.id}
+              className="bg-white rounded-lg border border-gray-200 shadow-sm px-4 py-3"
+            >
+              <div className="flex items-center gap-3 text-xs flex-wrap">
+                <span className="font-medium text-gray-700 truncate">
+                  {r.user?.name ?? `#${r.id}`}
+                </span>
+                <span className="font-mono text-gray-400 truncate flex-1 min-w-0">
+                  {r.block_id}
+                  {r.step_id ? `/${r.step_id}` : ""}
+                </span>
+
+                {/* Retries append rather than overwrite (BR-P745Q8), so the
+                    same student and question can appear more than once. */}
+                {(r.attempt_number ?? 1) > 1 && (
+                  <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[10px] font-medium flex-shrink-0">
+                    {r.attempt_number}. pokus
+                  </span>
+                )}
+
+                {failed ? (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-medium flex-shrink-0">
+                    <AlertTriangle className="w-3 h-3" />
+                    Nevyhodnoceno
+                  </span>
+                ) : r.is_correct ? (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-50 text-green-700 text-[10px] font-medium flex-shrink-0">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Splněno
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 text-[10px] font-medium flex-shrink-0">
+                    <XCircle className="w-3 h-3" />
+                    Nesplněno
+                  </span>
+                )}
+
+                {r.evaluated_by_ai && (
+                  <span
+                    title={r.ai_model ? `Hodnoceno AI (${r.ai_model})` : "Hodnoceno AI"}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 text-[10px] font-medium flex-shrink-0"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    AI
+                    {typeof score === "number" && ` ${score.toFixed(2)}`}
+                  </span>
+                )}
+              </div>
+
+              {r.answer_text && (
+                <p className="mt-2 text-sm text-gray-800 whitespace-pre-wrap break-words">
+                  {r.answer_text}
+                </p>
+              )}
+
+              {r.has_photo && (
+                <a
+                  href={`/api/backend/admin/open-answers/${r.id}/photo`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  Vyfocené řešení
+                </a>
+              )}
+
+              {parts ? (
+                <div className="mt-2 text-xs bg-violet-50/60 border-l-2 border-violet-300 px-2 py-1.5 rounded-r space-y-1.5 text-violet-900">
+                  {parts.strengths && (
+                    <p className="whitespace-pre-wrap">
+                      <span className="font-medium text-violet-700">Co je správně: </span>
+                      {parts.strengths}
+                    </p>
+                  )}
+                  {parts.improvements && (
+                    <p className="whitespace-pre-wrap">
+                      <span className="font-medium text-violet-700">Co zlepšit: </span>
+                      {parts.improvements}
+                    </p>
+                  )}
+                  {parts.next_step && (
+                    <p className="whitespace-pre-wrap">
+                      <span className="font-medium text-violet-700">Co dál: </span>
+                      {parts.next_step}
+                    </p>
+                  )}
+                  {parts.hint_question && (
+                    <p className="whitespace-pre-wrap">
+                      <span className="font-medium text-violet-700">Nápověda: </span>
+                      {parts.hint_question}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                // Rows written before BR-P745Q8 carry only the flat string.
+                r.ai_feedback && (
+                  <p className="mt-2 text-xs text-violet-800 bg-violet-50/60 border-l-2 border-violet-300 px-2 py-1.5 rounded-r whitespace-pre-wrap">
+                    {r.ai_feedback}
+                  </p>
+                )
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Quiz Tab
 // ============================================================================
 
@@ -1076,6 +1255,12 @@ export default function CourseResultsPage({
     isLoading: quizLoading,
   } = useQuizAttempts(stringCourseId);
 
+  // Free-text answers graded outside quiz mode (BR-FFVVYR)
+  const {
+    data: openAnswersData,
+    isLoading: openAnswersLoading,
+  } = useOpenAnswers(stringCourseId);
+
   // Lesson filter state (for User Answers tab)
   const [selectedLesson, setSelectedLesson] = useState("");
 
@@ -1203,6 +1388,12 @@ export default function CourseResultsPage({
             <Users className="w-3.5 h-3.5 mr-1.5" />
             Odpovědi uživatelů
           </TabsTrigger>
+          {(openAnswersData?.data?.length ?? 0) > 0 && (
+            <TabsTrigger value="open-answers">
+              <MessageSquareText className="w-3.5 h-3.5 mr-1.5" />
+              Otevřené odpovědi
+            </TabsTrigger>
+          )}
           {(course?.starts_with_quiz || (quizData?.data?.length ?? 0) > 0) && (
             <TabsTrigger value="quiz">
               <Trophy className="w-3.5 h-3.5 mr-1.5" />
@@ -1238,6 +1429,14 @@ export default function CourseResultsPage({
             blocksMap={blocksMap}
             selectedLesson={selectedLesson}
             onSelectLesson={setSelectedLesson}
+          />
+        </TabsContent>
+
+        {/* Open Answers Tab */}
+        <TabsContent value="open-answers">
+          <OpenAnswersCourseTab
+            data={openAnswersData}
+            isLoading={openAnswersLoading}
           />
         </TabsContent>
 

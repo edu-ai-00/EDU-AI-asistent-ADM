@@ -220,8 +220,18 @@ interface QuestionOption {
 
 **open:**
 - Show text input field
-- Compare user input to `correct_answer` (case-insensitive, trimmed)
-- Show `solution` after submission
+- When `allow_photo` is set, also offer attaching a photo of a solution worked
+  out on paper. When it is not set the affordance must be absent, not disabled.
+- Without `ai_evaluation`: compare user input to `correct_answer`
+  (case-insensitive, trimmed), then show `solution` after submission.
+- With `ai_evaluation` (BR-P745Q8): send the answer to `POST /api/answers/evaluate`
+  and render the three-part feedback it returns.
+  - Never show a score, a percentage, or a correct/incorrect verdict.
+  - **Never reveal `correct_answer`** — not verbatim, not paraphrased. It is an
+    internal reference for the evaluator only.
+  - Colour the field neutrally: green/red is a verdict.
+  - If evaluation fails, show a kind retry — do **not** fall back to the string
+    comparison, which marks any paragraph-length answer wrong.
 
 **numeric:**
 - Show numeric input field (number keyboard on mobile)
