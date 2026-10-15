@@ -73,7 +73,7 @@ export function classroomToText(classroom: Classroom): string {
 
 export function classroomToCsv(classroom: Classroom): string {
   const students = classroom.students ?? [];
-  const rows = ["Číslo,Jméno,Kód"];
+  const rows = ["Číslo,Přezdívka,Kód"];
   students.forEach((s, i) => {
     rows.push(`${i + 1},${s.name},${s.login_code}`);
   });

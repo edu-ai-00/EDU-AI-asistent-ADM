@@ -19,13 +19,28 @@ export function V2FormatPart2() {
 interface QuestionConfig {
   type: QuestionType;              // Typ otazky
   options?: QuestionOption[];      // Moznosti pro MCQ a T/F
-  correct_answer?: string;         // Spravna odpoved (pro open otazky)
+  correct_answer?: string;         // Spravna odpoved (pro open otazky; podle ni hodnoti AI, offline presna shoda s nekterym radkem; studentovi se nezobrazi)
   correct_number?: number;         // Spravna ciselna odpoved (pro numeric otazky)
   tolerance?: number;              // Akceptovatelna odchylka ± (default 0)
   allow_multiple?: boolean;        // Povolit vice odpovedi
   show_answers?: boolean;          // Zobrazit moznosti (default true)
   solution?: string;               // Reseni zobrazene po odpovedi
   solution_image?: StepImage;      // Volitelny obrazek v reseni
+
+  // --- Otevrene otazky: AI zpetna vazba a fotka (BR-P745Q8) ---
+  ai_evaluation?: boolean;         // Student vidi zpetnou vazbu AI; bez nej jen spravne/spatne + reseni (hodnoti AI vzdy)
+  ai_criteria_list?: QuestionCriterion[];  // Kriteria hodnoceni, max 4
+  ai_criteria?: string;            // Zastarale: kriteria volnym textem (BR-FFVVYR)
+  allow_photo?: boolean;           // Student muze prilozit fotku sveho reseni
+  ai_guided?: boolean;             // AI pruvodce resenim: reseni az po vycerpani pokusu (BR-V9TQA7)
+  ai_guided_attempts?: number;     // Kolik pokusu pred prozrazenim reseni (default 3)
+}
+
+interface QuestionCriterion {
+  id: string;                      // Stabilni ID, AI ho vraci u skore
+  name: string;                    // Nazev, napr. "Odolnost lesa"
+  description: string;             // Co ma student prokazat
+  weight: number;                  // Relativni vaha 0-100
 }
 
 interface QuestionOption {

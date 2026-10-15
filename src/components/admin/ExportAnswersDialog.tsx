@@ -135,10 +135,12 @@ export function ExportAnswersDialog({ course, onClose }: ExportAnswersDialogProp
 
           {/* Column info */}
           <div className="text-xs text-gray-500 leading-relaxed">
-            CSV (TSV) obsahuje konkrétní volby a texty: ID žáka, Jméno, E-mail, ID třídy,
+            CSV (TSV) obsahuje konkrétní volby a texty: ID žáka, Přezdívka, E-mail, ID třídy,
             Lekce, Blok, Krok, Otázka, Typ otázky, Odpověď (ID možnosti),
             Odpověď (text možnosti), Otevřená odpověď, Správně, Den, Otevřeno,
-            Potvrzeno, Doba. Zahrnuje i dotazníkové/postojové otázky bez „správně/špatně".
+            Potvrzeno, Doba, Hint otevřen, Help otevřen, Asistent otevřen. Sloupce
+            s nápovědou uvádějí čas každého otevření, prázdné = žák pomoc nepoužil.
+            Zahrnuje i dotazníkové/postojové otázky bez „správně/špatně".
           </div>
 
           {meta?.total_answers === 0 && (

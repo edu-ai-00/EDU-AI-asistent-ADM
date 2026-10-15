@@ -55,12 +55,19 @@ export function useCourseData(id: number | undefined) {
   });
 }
 
+/**
+ * `auto_version` is a transport-only flag: with it the API assigns the next
+ * version instead of rejecting a stale one. The editor sets it; manual JSON
+ * imports leave it off so they still get the version-collision error.
+ */
+export type CourseUploadPayload = CourseV2 & { auto_version?: boolean };
+
 // Upload a new course (or update existing via course_id)
 export function useUploadCourse() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (courseData: CourseV2) => api.uploadCourse<Course>(courseData),
+    mutationFn: (courseData: CourseUploadPayload) => api.uploadCourse<Course>(courseData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: COURSES_KEY });
       // Also invalidate the specific course data cache

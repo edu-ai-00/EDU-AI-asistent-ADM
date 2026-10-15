@@ -15,7 +15,8 @@ import { useChatSessions } from "@/hooks/useChat";
 import { useClassrooms } from "@/hooks/useClassrooms";
 import { Input } from "@/components/ui/Input";
 import { LoadingPage, LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { PERSONA_LABELS } from "@/types/chat";
+import { useMentors } from "@/hooks/useMentors";
+import { PERSONA_LABELS, personaColor, personaLabel } from "@/types/chat";
 import type { ChatSession, ChatPersona, ChatSessionsFilters } from "@/types/chat";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -45,13 +46,6 @@ function formatRelativeTime(dateString: string | null): string {
   if (diffDays < 30) return `před ${diffDays} d`;
   return date.toLocaleDateString("cs");
 }
-
-const PERSONA_COLORS: Record<ChatPersona, string> = {
-  ai_teacher: "bg-blue-100 text-blue-800",
-  math_mentor: "bg-green-100 text-green-800",
-  study_coach: "bg-amber-100 text-amber-800",
-  language_mentor: "bg-purple-100 text-purple-800",
-};
 
 // ── Multi-select dropdown ────────────────────────────────────────────────────
 
@@ -146,7 +140,13 @@ function MultiSelect({
 
 // ── Session row ──────────────────────────────────────────────────────────────
 
-function SessionRow({ session }: { session: ChatSession }) {
+function SessionRow({
+  session,
+  mentorNames,
+}: {
+  session: ChatSession;
+  mentorNames: Record<string, string>;
+}) {
   const router = useRouter();
 
   return (
@@ -163,9 +163,9 @@ function SessionRow({ session }: { session: ChatSession }) {
         </div>
       </td>
       <td className="px-4 py-3 text-center w-44">
-        <span className={`inline-flex items-center justify-center gap-1 w-full px-2 py-0.5 rounded-full text-xs font-medium ${PERSONA_COLORS[session.persona]}`}>
+        <span className={`inline-flex items-center justify-center gap-1 w-full px-2 py-0.5 rounded-full text-xs font-medium ${personaColor(session.persona)}`}>
           <Bot className="w-3 h-3" />
-          {PERSONA_LABELS[session.persona]}
+          {personaLabel(session.persona, mentorNames)}
         </span>
       </td>
       <td className="px-4 py-3 text-center text-sm text-gray-700 w-20">
@@ -239,6 +239,12 @@ export function ChatList() {
   const [selectedPersona, setSelectedPersona] = useState<Set<string>>(new Set());
   const [selectedClassrooms, setSelectedClassrooms] = useState<Set<string>>(new Set());
 
+  const { data: mentors } = useMentors();
+  const mentorNames = useMemo(
+    () => Object.fromEntries((mentors ?? []).map((m) => [m.slug, m.name])),
+    [mentors]
+  );
+
   const filters: ChatSessionsFilters = useMemo(() => ({
     search: debouncedSearch || undefined,
     persona: selectedPersona.size === 1
@@ -269,14 +275,15 @@ export function ChatList() {
       .map((c) => ({ value: String(c.id), label: c.name }));
   }, [classrooms]);
 
-  const personaOptions = useMemo(
-    () =>
-      (Object.entries(PERSONA_LABELS) as [string, string][]).map(([value, label]) => ({
-        value,
-        label,
-      })),
-    []
-  );
+  // Filter options come from the live mentor list so admin-created mentors are
+  // filterable; the built-in labels are the fallback until it loads.
+  const personaOptions = useMemo(() => {
+    if (mentors && mentors.length > 0) {
+      return mentors.map((m) => ({ value: m.slug, label: m.name }));
+    }
+
+    return Object.entries(PERSONA_LABELS).map(([value, label]) => ({ value, label }));
+  }, [mentors]);
 
   const hasActiveFilters = selectedPersona.size > 0 || selectedClassrooms.size > 0;
 
@@ -372,7 +379,7 @@ export function ChatList() {
             </thead>
             <tbody>
               {sessions.map((session) => (
-                <SessionRow key={session.id} session={session} />
+                <SessionRow key={session.id} session={session} mentorNames={mentorNames} />
               ))}
             </tbody>
           </table>

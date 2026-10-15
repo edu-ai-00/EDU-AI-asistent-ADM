@@ -7,10 +7,13 @@ import type {
   AddStudentsPayload,
   AssignedCourse,
   AssignCoursesPayload,
+  SelfServiceClassroom,
 } from "@/types/classroom";
 import type { CourseSkillsOverview } from "@/types/skills";
 
 const CLASSROOMS_KEY = ["classrooms"];
+const SCHOOLS_KEY = ["schools"];
+const SELF_SERVICE_CLASSROOMS_KEY = ["classrooms", "self_service"];
 
 export function useClassrooms() {
   return useQuery({
@@ -35,6 +38,8 @@ export function useCreateClassroom() {
       api.post<Classroom>("/admin/classrooms", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CLASSROOMS_KEY });
+      // A class created into a school changes that school's class count.
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_KEY });
     },
   });
 }
@@ -73,6 +78,43 @@ export function useDeleteClassroom() {
       api.delete<void>(`/admin/classrooms/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CLASSROOMS_KEY });
+      queryClient.invalidateQueries({ queryKey: SCHOOLS_KEY });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Self-service classes (BR-8FDF37)
+//
+// Guardian-owned classrooms auto-provisioned on confirmed consent, kept out
+// of the default /admin/classrooms listing by AdminClassroomController::
+// index() (default type=school). This is the only place that asks for
+// type=self_service, and it gets its own query key so offboarding one here
+// never stales the ordinary classroom list (and vice versa).
+// ---------------------------------------------------------------------------
+
+export function useSelfServiceClassrooms() {
+  return useQuery({
+    queryKey: SELF_SERVICE_CLASSROOMS_KEY,
+    queryFn: () => api.get<SelfServiceClassroom[]>("/admin/classrooms?type=self_service"),
+  });
+}
+
+/**
+ * Hits DELETE /admin/classrooms/:id, but that endpoint does not erase data on
+ * the spot for a self-service classroom — it revokes the guardian's consent
+ * (same path as their own magic-link page), which locks the children out now
+ * and schedules erasure for consent:purge-revoked after the grace period. The
+ * classroom keeps showing up here until that job actually removes it, which
+ * is why this only needs to invalidate the list, not assume the row is gone.
+ */
+export function useOffboardSelfServiceClassroom() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => api.delete<void>(`/admin/classrooms/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SELF_SERVICE_CLASSROOMS_KEY });
     },
   });
 }

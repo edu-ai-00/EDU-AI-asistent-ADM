@@ -180,8 +180,8 @@ export function BlockIdentificationEditor({
           </div>
         </div>
 
-        {/* Default Practice toggle — exercise blocks only */}
-        {block.type === "exercise" && (
+        {/* Default Practice toggle — question & exercise blocks (display uses the step-level toggle) */}
+        {block.type !== "display" && (
           <div className="flex items-center gap-3 mt-3">
             <label className="relative inline-flex items-center cursor-pointer">
               <input

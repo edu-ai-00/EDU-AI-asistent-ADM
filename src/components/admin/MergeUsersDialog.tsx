@@ -76,7 +76,7 @@ function buildIdentityDiff(
   result?: Partial<MergeUserSummary>
 ): MergeSectionDiff[] {
   const fields: { field: string; label: string; pick: (u: Partial<MergeUserSummary>) => unknown }[] = [
-    { field: "name", label: "Jméno", pick: (u) => u.name },
+    { field: "name", label: "Přezdívka", pick: (u) => u.name },
     { field: "email", label: "E-mail", pick: (u) => u.email },
     { field: "login_code", label: "PIN", pick: (u) => u.login_code },
     { field: "role", label: "Role", pick: (u) => u.role },

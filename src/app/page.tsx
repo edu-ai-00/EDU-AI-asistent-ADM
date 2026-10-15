@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect, Suspense } from "react";
+import { useState, useCallback, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Toolbar } from "@/components/Toolbar";
 import type { Course } from "@/types/course";
 import type { CourseV2, BlockV2 } from "@/types/block-v2";
 import {
   createCourseV2,
+  createStarterCourseV2,
   getCurrentTimestamp,
   migrateCourseBlocks,
   migrateBlockToSteps,
@@ -14,8 +15,11 @@ import {
 import { Navbar } from "@/components/admin/Navbar";
 import { useUploadCourse } from "@/hooks/useCourses";
 import { useVectorDimensions } from "@/hooks/useSkills";
+import { validateCourseGpfVectors } from "@/lib/gpf-vectors";
 import type { VectorDimensionLabel } from "@/components/editors/BlockV2Editor";
 import type { Course as ApiCourse } from "@/types/api";
+import { GenerateDialog } from "@/components/generate/GenerateDialog";
+import type { InflatedDraft } from "@/lib/generation/inflate";
 import { EmptyState } from "./_components/EmptyState";
 import { CourseTreePanel } from "./_components/CourseTreePanel";
 import { EditorPanel } from "./_components/EditorPanel";
@@ -48,6 +52,8 @@ function HomeContent() {
   const [isAdminEdit, setIsAdminEdit] = useState(false);
   const [editCourseMeta, setEditCourseMeta] = useState<ApiCourse | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveError, setSaveError] = useState<unknown>(null);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const uploadCourse = useUploadCourse();
 
   // Fetch GPF dimension labels for the course's assigned vector
@@ -58,6 +64,22 @@ function HomeContent() {
     name: d.name,
     domain_code: d.domain_code,
   }));
+
+  // "Nový kurz" on the Kurzy screen (BR-FZTSDK): a new course in admin edit
+  // mode, so Save creates it on the server instead of offering an export. It
+  // starts with one lesson and one display block (BR-YZFYPN).
+  useEffect(() => {
+    if (searchParams.get("new") !== "true") return;
+    const newCourseV2 = createStarterCourseV2({ name: "Nový kurz" });
+    setEditCourseMeta(null);
+    setCourseV2(newCourseV2);
+    setCourse(null);
+    setFilename(`${newCourseV2.course_id}-v${newCourseV2.version}.json`);
+    setHasChanges(true);
+    setImportVersion("v2");
+    setIsAdminEdit(true);
+    setSelection({ version: "v2", type: "course_v2", id: "course_v2", data: newCourseV2 });
+  }, [searchParams]);
 
   // Check for course to edit from sessionStorage (from dashboard)
   useEffect(() => {
@@ -197,8 +219,30 @@ function HomeContent() {
     setSelection({ version: "v2", type: "course_v2", id: "course_v2", data: newCourseV2 });
   }, []);
 
+  // AI Course Assistant (BR-D4PE8R): generated lessons and blocks are appended,
+  // never merged into existing ones, so nothing an author already wrote can be
+  // overwritten by a model. Ids are pre-namespaced (AI_*) by the inflater.
+  const handleGeneratedInsert = useCallback(
+    (fragment: InflatedDraft) => {
+      if (!courseV2) return;
+
+      const updated: CourseV2 = {
+        ...courseV2,
+        lessons: [...courseV2.lessons, ...fragment.lessons],
+        blocks: [...(courseV2.blocks ?? []), ...fragment.blocks],
+        updated: getCurrentTimestamp(),
+      };
+
+      setCourseV2(updated);
+      setHasChanges(true);
+      setSelection({ version: "v2", type: "course_v2", id: "course_v2", data: updated });
+    },
+    [courseV2]
+  );
+
   const handleSave = useCallback(() => {
     if (isAdminEdit && courseV2) {
+      setSaveError(null);
       setShowSaveDialog(true);
     } else {
       setHasChanges(false);
@@ -206,21 +250,57 @@ function HomeContent() {
     }
   }, [isAdminEdit, courseV2]);
 
+  // Blocks whose ELO vectors the app's engine would reject (BR-S9SVNM). The
+  // save dialog lists them as a warning; saving is deliberately still allowed
+  // so a content fix is never gated on the vectors being correct first.
+  const gpfIssues = useMemo(
+    () => (courseV2 ? validateCourseGpfVectors(courseV2) : []),
+    [courseV2]
+  );
+
+  // A course opened with "Nový kurz" (BR-FZTSDK) has no server record until
+  // its first save, which hands one back.
+  const isNewCourse = isAdminEdit && editCourseMeta === null;
+
   const handleSaveToServer = async () => {
     if (!courseV2) return;
+    setSaveError(null);
     try {
-      // Auto-increment version
-      const updatedCourse: CourseV2 = {
+      const updated = getCurrentTimestamp();
+      // The server owns the version counter (auto_version): it stores the
+      // course as current + 1 and reports the number back, so an editor copy
+      // that drifted behind can never deadlock saving (BR-PKYUZC).
+      const saved = await uploadCourse.mutateAsync({
         ...courseV2,
-        version: courseV2.version + 1,
-        updated: getCurrentTimestamp(),
+        // Only used for a course the server has never seen; for an existing
+        // one auto_version overrides it with current + 1. A new course keeps
+        // its own version (1) and the strict check, so a course_id that is
+        // already taken is refused rather than saved over (BR-FZTSDK).
+        version: isNewCourse ? courseV2.version : courseV2.version + 1,
+        auto_version: !isNewCourse,
+        updated,
+      });
+      if (isNewCourse) setEditCourseMeta(saved);
+      const savedCourse: CourseV2 = {
+        ...courseV2,
+        version: saved.version,
+        updated,
       };
-      await uploadCourse.mutateAsync(updatedCourse);
-      setCourseV2(updatedCourse);
+      setCourseV2(savedCourse);
+      // Keep the tree selection pointing at the saved course — a stale
+      // snapshot here would be written back by the next course-level edit.
+      setSelection((current) =>
+        current?.version === "v2" && current.type === "course_v2"
+          ? { ...current, data: savedCourse }
+          : current
+      );
       setHasChanges(false);
       setShowSaveDialog(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Nepodařilo se uložit kurz");
+      // Keep the dialog open and show the failure inside it. A rejected save
+      // can carry a structure conflict with a list of diverging paths
+      // (BR-AYACEK), which an alert() could not render usefully.
+      setSaveError(err);
     }
   };
 
@@ -235,6 +315,7 @@ function HomeContent() {
         hasChanges={hasChanges}
         onExport={handleExport}
         onSave={handleSave}
+        onGenerate={courseV2 ? () => setShowGenerateDialog(true) : undefined}
         importVersion={importVersion}
       />
 
@@ -272,12 +353,23 @@ function HomeContent() {
         )}
       </div>
 
+      {/* AI Course Assistant (BR-D4PE8R) */}
+      <GenerateDialog
+        open={showGenerateDialog}
+        courseV2={courseV2}
+        onClose={() => setShowGenerateDialog(false)}
+        onInsert={handleGeneratedInsert}
+      />
+
       {/* Save confirmation dialog (admin edit mode) */}
       <SaveDialog
         open={showSaveDialog}
         courseV2={courseV2}
         isPending={uploadCourse.isPending}
-        onClose={() => setShowSaveDialog(false)}
+        error={saveError}
+        gpfIssues={gpfIssues}
+        isNew={isNewCourse}
+        onClose={() => { setShowSaveDialog(false); setSaveError(null); }}
         onConfirm={handleSaveToServer}
       />
     </div>

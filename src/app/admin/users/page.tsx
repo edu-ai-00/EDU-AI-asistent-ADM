@@ -6,7 +6,9 @@ import Link from "next/link";
 import { Bug, Merge } from "lucide-react";
 import { UserList } from "@/components/admin/UserList";
 import { ClassroomSection } from "@/components/admin/ClassroomSection";
+import { SchoolSection } from "@/components/admin/SchoolSection";
 import { TeamSection } from "@/components/admin/TeamSection";
+import { ActivitySection } from "@/components/admin/ActivitySection";
 import { MergeUsersDialog } from "@/components/admin/MergeUsersDialog";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -20,8 +22,10 @@ function UsersPageContent() {
   const titles: Record<string, { title: string; desc: string }> = {
     students: { title: "Studenti", desc: "Registrovaní studenti a jejich aktivita" },
     classrooms: { title: "Třídy", desc: "Správa tříd, žáků a přiřazených kurzů" },
+    schools: { title: "Školy", desc: "Organizační jednotky a přiřazení učitelů" },
     teachers: { title: "Učitelé", desc: "Správa učitelských účtů" },
     admins: { title: "Admini", desc: "Správa administrátorů" },
+    activity: { title: "Aktivita", desc: "Denní přehled aktivity žáků – čas práce, bloky, chaty, hry" },
   };
 
   const { title, desc } = titles[tab] ?? titles.students;
@@ -58,8 +62,10 @@ function UsersPageContent() {
 
       {tab === "students" && <UserList />}
       {tab === "classrooms" && <ClassroomSection />}
+      {tab === "schools" && isAdmin && <SchoolSection />}
       {tab === "teachers" && isAdmin && <TeamSection roleFilter="teacher" />}
       {tab === "admins" && isAdmin && <TeamSection roleFilter="admin" />}
+      {tab === "activity" && <ActivitySection />}
 
       {isAdmin && (
         <MergeUsersDialog

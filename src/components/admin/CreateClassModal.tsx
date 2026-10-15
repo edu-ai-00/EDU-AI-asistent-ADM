@@ -1,14 +1,23 @@
 import { useState } from "react";
 import { X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { classTeacherOptions } from "@/lib/school-roster";
 import type { TeamMember } from "@/hooks/useTeam";
+import type { School } from "@/types/school";
 
 interface CreateClassModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (name: string, count: number, teacherIds: number[]) => void;
+  onCreate: (
+    name: string,
+    count: number,
+    teacherIds: number[],
+    schoolId: number | null
+  ) => void;
   isLoading?: boolean;
   teachers?: TeamMember[];
+  /** Empty for a teacher — schools are admin-only, so no picker is shown. */
+  schools?: School[];
 }
 
 export function CreateClassModal({
@@ -17,9 +26,11 @@ export function CreateClassModal({
   onCreate,
   isLoading = false,
   teachers = [],
+  schools = [],
 }: CreateClassModalProps) {
   const [name, setName] = useState("");
   const [count, setCount] = useState(25);
+  const [schoolId, setSchoolId] = useState<number | null>(null);
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,12 +47,13 @@ export function CreateClassModal({
       setError("Počet žáků musí být 1–50");
       return;
     }
-    onCreate(trimmed, count, selectedTeacherIds);
+    onCreate(trimmed, count, selectedTeacherIds, schoolId);
   };
 
   const handleClose = () => {
     setName("");
     setCount(25);
+    setSchoolId(null);
     setSelectedTeacherIds([]);
     setError(null);
     onClose();
@@ -52,6 +64,17 @@ export function CreateClassModal({
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
     );
   }
+
+  // Picking a school narrows the teachers to its own (BR-35BPD3); a teacher
+  // ticked before the switch who is not there would otherwise be sent along
+  // without being on screen any more.
+  function changeSchool(next: number | null) {
+    setSchoolId(next);
+    const offered = classTeacherOptions(teachers, next).map((t) => t.id);
+    setSelectedTeacherIds((prev) => prev.filter((id) => offered.includes(id)));
+  }
+
+  const teacherOptions = classTeacherOptions(teachers, schoolId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -95,6 +118,28 @@ export function CreateClassModal({
             />
           </div>
 
+          {schools.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Škola
+              </label>
+              <select
+                value={schoolId ?? ""}
+                onChange={(e) =>
+                  changeSchool(e.target.value ? Number(e.target.value) : null)
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Bez školy</option>
+                {schools.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Počet žáků
@@ -114,8 +159,13 @@ export function CreateClassModal({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Učitelé
               </label>
+              {teacherOptions.length === 0 && (
+                <p className="text-sm text-gray-500 px-2 py-1.5">
+                  Ve vybrané škole zatím nejsou žádní učitelé.
+                </p>
+              )}
               <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                {teachers.map((t) => (
+                {teacherOptions.map((t) => (
                   <label
                     key={t.id}
                     className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer"

@@ -5,7 +5,7 @@ import {
   BookOpen, Clock, FileText, MoreVertical, Trash2, Upload, Edit, Globe,
   Code, BarChart3, KeyRound, Zap, Ban, RotateCcw, ChevronRight, Lock,
   CheckCircle, CheckCircle2, FileEdit, HelpCircle, EyeOff, Download,
-  Layers, Users, Hash, User,
+  Layers, Users, Hash, User, Languages, AlertTriangle,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { Course } from "@/types/api";
@@ -30,8 +30,14 @@ const statusStyles: Record<string, { bg: string; text: string; dot: string }> = 
 interface CourseCardProps {
   course: Course;
   gpfVectorName?: string;
+  /**
+   * The course's sibling language variants (BR-AYACEK), resolved by the list
+   * from the courses it already holds — no extra request per card.
+   */
+  siblings?: Course[];
   onDelete?: (courseId: number) => void;
   onUploadNewVersion?: (course: Course) => void;
+  onUploadTranslation?: (course: Course) => void;
   onEdit?: (course: Course) => void;
   onStatusChange?: (course: Course, status: Course["status"]) => void;
   onRestore?: (course: Course) => void;
@@ -39,7 +45,7 @@ interface CourseCardProps {
   onExportAnswers?: (course: Course) => void;
 }
 
-export function CourseCard({ course, gpfVectorName, onDelete, onUploadNewVersion, onEdit, onStatusChange, onRestore, onExport, onExportAnswers }: CourseCardProps) {
+export function CourseCard({ course, gpfVectorName, siblings, onDelete, onUploadNewVersion, onUploadTranslation, onEdit, onStatusChange, onRestore, onExport, onExportAnswers }: CourseCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showStatusSubmenu, setShowStatusSubmenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -98,6 +104,41 @@ export function CourseCard({ course, gpfVectorName, onDelete, onUploadNewVersion
                   <span>·</span>
                   <span className="uppercase">{course.language}</span>
                 </div>
+
+                {/* Language variants (BR-AYACEK): a variant whose structure has
+                    drifted from this one is flagged — the two can no longer be
+                    saved past each other until they are brought back in line. */}
+                {siblings && siblings.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    <Languages className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    {siblings.map((sibling) => {
+                      const inSync =
+                        !course.structure_hash ||
+                        !sibling.structure_hash ||
+                        course.structure_hash === sibling.structure_hash;
+
+                      return (
+                        <span
+                          key={sibling.id}
+                          title={
+                            inSync
+                              ? `${sibling.name} (${sibling.course_id}, v${sibling.version})`
+                              : `${sibling.name} — struktura se liší od této varianty, uložení je zablokováno`
+                          }
+                          className={cn(
+                            "inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded uppercase",
+                            inSync
+                              ? "bg-gray-100 text-gray-600"
+                              : "bg-amber-100 text-amber-800"
+                          )}
+                        >
+                          {!inSync && <AlertTriangle className="w-3 h-3" />}
+                          {sibling.language}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
@@ -183,6 +224,10 @@ export function CourseCard({ course, gpfVectorName, onDelete, onUploadNewVersion
                           <button onClick={() => { closeMenu(); onUploadNewVersion?.(course); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                             <Upload className="w-4 h-4" />
                             Nahrát novou verzi
+                          </button>
+                          <button onClick={() => { closeMenu(); onUploadTranslation?.(course); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                            <Languages className="w-4 h-4" />
+                            Nahrát jazykovou variantu
                           </button>
                           <Link href={`/admin/courses/${course.id}/results`} onClick={closeMenu} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                             <BarChart3 className="w-4 h-4" />

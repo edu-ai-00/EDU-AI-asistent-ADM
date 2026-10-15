@@ -216,6 +216,11 @@ function UserRow({ user }: { user: AdminUser }) {
             {user.is_guest && (
               <span className="ml-1.5 text-xs font-normal text-gray-400">(host)</span>
             )}
+            {user.deactivated_at && (
+              <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                deaktivován
+              </span>
+            )}
           </div>
           <div className="text-sm text-gray-500">
             {user.email ?? <span className="italic text-gray-400">bez e-mailu</span>}

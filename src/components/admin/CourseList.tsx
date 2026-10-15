@@ -6,6 +6,7 @@ import { Plus, Search, AlertCircle, Upload, Eye, EyeOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCourses, useDeleteCourse, useUploadCourse, useRestoreCourse } from "@/hooks/useCourses";
 import { useVectors } from "@/hooks/useSkills";
+import { useLanguages, languageLabel } from "@/hooks/useLanguages";
 import { CourseCard } from "./CourseCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -27,8 +28,37 @@ export function CourseList() {
   const queryClient = useQueryClient();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadForCourse, setUploadForCourse] = useState<Course | null>(null);
+  const [translationForCourse, setTranslationForCourse] = useState<Course | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [languageFilter, setLanguageFilter] = useState("");
   const [loadingCourseId, setLoadingCourseId] = useState<number | null>(null);
+
+  // Language catalogue for the filter (BR-AYACEK).
+  const { data: languages } = useLanguages(true);
+
+  // Sibling language variants, grouped by translation key. Derived from the
+  // list we already have, so showing variants costs no extra request.
+  const siblingsByCourseId = useMemo(() => {
+    const groups = new Map<string, Course[]>();
+    for (const course of courses ?? []) {
+      const key = course.translation_key ?? course.course_id;
+      groups.set(key, [...(groups.get(key) ?? []), course]);
+    }
+
+    const siblings = new Map<number, Course[]>();
+    for (const group of Array.from(groups.values())) {
+      if (group.length < 2) continue;
+      for (const course of group) {
+        siblings.set(
+          course.id,
+          group
+            .filter((other) => other.id !== course.id)
+            .sort((a, b) => a.language.localeCompare(b.language)),
+        );
+      }
+    }
+    return siblings;
+  }, [courses]);
 
   // Fetch GPF vectors for name lookup (vector_id is on the Course object directly)
   const { data: vectors } = useVectors();
@@ -60,12 +90,21 @@ export function CourseList() {
     );
   }
 
-  const filteredCourses = courses?.filter(
-    (course) =>
+  const filteredCourses = courses?.filter((course) => {
+    if (languageFilter && course.language !== languageFilter) return false;
+
+    return (
       course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.course_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
-  );
+    );
+  });
+
+  // Only offer languages that actually label a course, so the filter never
+  // shows an option that returns nothing.
+  const usedLanguages = Array.from(
+    new Set((courses ?? []).map((course) => course.language)),
+  ).sort();
 
   const handleDelete = async (courseId: number) => {
     if (confirm("Opravdu chcete smazat tento kurz? Tuto akci nelze vrátit zpět.")) {
@@ -96,7 +135,14 @@ export function CourseList() {
   };
 
   const handleUploadNewVersion = (course: Course) => {
+    setTranslationForCourse(null);
     setUploadForCourse(course);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleUploadTranslation = (course: Course) => {
+    setUploadForCourse(null);
+    setTranslationForCourse(course);
     setIsUploadModalOpen(true);
   };
 
@@ -126,12 +172,15 @@ export function CourseList() {
   const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false);
     setUploadForCourse(null);
+    setTranslationForCourse(null);
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="relative w-72">
+      {/* The admin column is ~838px wide; with the language filter shown the
+          actions only fit on one line if the search box gives way. */}
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="relative w-72 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
             type="search"
@@ -142,7 +191,21 @@ export function CourseList() {
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0 whitespace-nowrap">
+          {usedLanguages.length > 1 && (
+            <select
+              value={languageFilter}
+              onChange={(e) => setLanguageFilter(e.target.value)}
+              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm bg-white text-gray-700"
+            >
+              <option value="">Všechny jazyky</option>
+              {usedLanguages.map((code) => (
+                <option key={code} value={code}>
+                  {languageLabel(code, languages)}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             onClick={() => setShowDeleted(!showDeleted)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
@@ -154,9 +217,16 @@ export function CourseList() {
             {showDeleted ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {showDeleted ? "Skrýt smazané" : "Zobrazit smazané"}
           </button>
-          <Button onClick={() => setIsUploadModalOpen(true)}>
+          <Button variant="secondary" onClick={() => setIsUploadModalOpen(true)}>
             <Upload className="w-4 h-4" />
             Nahrát kurz
+          </Button>
+          {/* Opens the editor on a blank course that saves straight to the
+              server, so a course no longer has to start as a JSON file
+              (BR-FZTSDK). */}
+          <Button onClick={() => router.push("/?new=true")}>
+            <Plus className="w-4 h-4" />
+            Nový kurz
           </Button>
         </div>
       </div>
@@ -194,9 +264,11 @@ export function CourseList() {
               <CourseCard
                 course={course}
                 gpfVectorName={course.vector_id ? vectorMap.get(course.vector_id) : undefined}
+                siblings={siblingsByCourseId.get(course.id)}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onUploadNewVersion={handleUploadNewVersion}
+                onUploadTranslation={handleUploadTranslation}
                 onStatusChange={handleStatusChange}
                 onRestore={handleRestore}
                 onExport={setExportCourse}
@@ -216,6 +288,7 @@ export function CourseList() {
         }}
         isLoading={uploadCourse.isPending}
         updateForCourse={uploadForCourse}
+        translationForCourse={translationForCourse}
       />
 
       <ExportEloDialog

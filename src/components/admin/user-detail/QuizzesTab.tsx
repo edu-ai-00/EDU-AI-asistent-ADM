@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
   CheckCircle2,
   XCircle,
   Timer,
+  Sparkles,
 } from "lucide-react";
 import type { QuizAttempt, QuizAttemptAnswer } from "@/types/api";
 import { formatDate, formatSeconds, formatTime, scoreColor } from "./shared";
@@ -88,33 +89,57 @@ export function QuizzesTab({
                     </thead>
                     <tbody>
                       {answers.map((a, aIdx) => (
-                        <tr key={aIdx} className="border-t border-gray-100">
-                          <td className="py-1.5 pr-3 text-gray-400">
-                            {(a.question_index ?? aIdx) + 1}
-                          </td>
-                          <td className="py-1.5 pr-3 font-mono text-gray-600 max-w-[250px] truncate">
-                            {a.question_id}
-                          </td>
-                          <td className="py-1.5 pr-3 text-center font-mono text-gray-500">
-                            {a.selected_answer}
-                          </td>
-                          <td className="py-1.5 pr-3 text-center">
-                            {a.is_correct ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-50 text-green-700 text-[10px] font-medium">
-                                <CheckCircle2 className="w-3 h-3" />
-                                Správně
+                        <Fragment key={aIdx}>
+                          <tr className="border-t border-gray-100">
+                            <td className="py-1.5 pr-3 text-gray-400">
+                              {(a.question_index ?? aIdx) + 1}
+                            </td>
+                            <td className="py-1.5 pr-3 font-mono text-gray-600 max-w-[250px] truncate">
+                              {a.question_id}
+                            </td>
+                            <td className="py-1.5 pr-3 text-center font-mono text-gray-500">
+                              {a.selected_answer}
+                            </td>
+                            <td className="py-1.5 pr-3 text-center">
+                              <span className="inline-flex items-center gap-1">
+                                {a.is_correct ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-50 text-green-700 text-[10px] font-medium">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Správně
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 text-[10px] font-medium">
+                                    <XCircle className="w-3 h-3" />
+                                    Špatně
+                                  </span>
+                                )}
+                                {a.evaluated_by_ai && (
+                                  <span
+                                    title={a.ai_model ? `Hodnoceno AI (${a.ai_model})` : "Hodnoceno AI"}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 text-[10px] font-medium"
+                                  >
+                                    <Sparkles className="w-3 h-3" />
+                                    AI
+                                    {typeof a.ai_score === "number" && ` ${a.ai_score.toFixed(2)}`}
+                                  </span>
+                                )}
                               </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 text-[10px] font-medium">
-                                <XCircle className="w-3 h-3" />
-                                Špatně
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-1.5 text-center text-gray-500 whitespace-nowrap">
-                            {formatTime(a.answered_at)}
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="py-1.5 text-center text-gray-500 whitespace-nowrap">
+                              {formatTime(a.answered_at)}
+                            </td>
+                          </tr>
+                          {a.evaluated_by_ai && a.ai_feedback && (
+                            <tr className="border-t border-gray-50">
+                              <td />
+                              <td colSpan={4} className="pb-2 pr-3">
+                                <p className="text-[11px] text-violet-800 bg-violet-50/60 border-l-2 border-violet-300 px-2 py-1 rounded-r">
+                                  {a.ai_feedback}
+                                </p>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>

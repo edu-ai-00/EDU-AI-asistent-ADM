@@ -16,6 +16,7 @@ import type {
   QuestionType,
   QuestionConfig,
 } from "@/types/block-v2";
+import { uniqueCourseBlocks } from "@/lib/course-blocks";
 
 // ============================================================================
 // FSRS Default Values
@@ -27,7 +28,10 @@ export const DEFAULT_FSRS: FSRSParameters = {
   initial_recall: 0.65,
   forgetting_rate: 0.25,
   repetitions: 0,
-  weight: 1.0,
+  // Spec default is 5 (mid-priority); the app also falls back to 5.0 for
+  // blocks with no fsrs data, so authored and unauthored blocks rank equally
+  // until an author deliberately raises/lowers a block's priority.
+  weight: 5.0,
   min_interval: 1,
   max_interval: 90,
 };
@@ -238,6 +242,18 @@ export function createCourseV2(overrides: Partial<CourseV2> = {}): CourseV2 {
   };
 }
 
+// The course "Nový kurz" opens on (BR-YZFYPN): one lesson holding one display
+// block. A course saved without lessons shows a teacher nothing at all, so the
+// skeleton an author would otherwise build by hand is there from the start.
+export function createStarterCourseV2(overrides: Partial<CourseV2> = {}): CourseV2 {
+  const block = createBlockV2({ type: "display" });
+  const lesson = createLessonV2(1, {
+    name: "Nová lekce",
+    blocks: [createLessonBlockBinding(block.block_id, 1)],
+  });
+  return createCourseV2({ lessons: [lesson], blocks: [block], ...overrides });
+}
+
 // ============================================================================
 // Status Labels (for UI)
 // ============================================================================
@@ -425,9 +441,10 @@ export function normalizeImportedBlock(raw: any): BlockV2 {
 
 export function migrateCourseBlocks(course: CourseV2): CourseV2 {
   if (!course.blocks || course.blocks.length === 0) return course;
+  const unique = uniqueCourseBlocks(course);
   return {
-    ...course,
-    blocks: course.blocks.map(migrateBlockToSteps),
+    ...unique,
+    blocks: unique.blocks!.map(migrateBlockToSteps),
   };
 }
 
@@ -444,8 +461,17 @@ function validateQuestionConfig(q: QuestionConfig, prefix: string): string[] {
   const errors: string[] = [];
   switch (q.type) {
     case "open":
-      if (!q.correct_answer || q.correct_answer.trim() === "") {
-        errors.push(`${prefix}: Otevřená otázka nemá definovanou správnou odpověď`);
+      // A missing expected answer is deliberately NOT an error (BR-P745Q8).
+      // The brief allows a question with no grading basis at all — the AI then
+      // judges plain factual correctness against the task statement — and asks
+      // only that the admin *mark* it, which QuestionStepEditor does with a
+      // "bez opory pro vyhodnocení" badge. Blocking export here would make the
+      // supported case unshippable.
+      if (q.ai_criteria_list?.some(c => !c.name || c.name.trim() === "")) {
+        errors.push(`${prefix}: Kritérium hodnocení nemá název`);
+      }
+      if ((q.ai_criteria_list?.length ?? 0) > 4) {
+        errors.push(`${prefix}: Otevřená otázka může mít nejvýš 4 kritéria hodnocení`);
       }
       break;
     case "multiple_choice":

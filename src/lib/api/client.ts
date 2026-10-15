@@ -4,13 +4,22 @@
 // httpOnly Sanctum token server-side. This means: no token in client JS, no
 // CORS, no NEXT_PUBLIC_* secrets.
 
+import { getSessionUser } from "@/lib/auth/session-user";
+
 const PROXY_BASE = "/api/backend";
 
 export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    public errors?: Record<string, string[]>
+    public errors?: Record<string, string[]>,
+    /**
+     * The full decoded error body. Laravel error responses carry structured
+     * detail beyond `message`/`errors` — the course upload's
+     * `structure_conflict`, for one — and callers need it to render the
+     * specific paths that diverged.
+     */
+    public payload?: Record<string, unknown>
   ) {
     super(message);
     this.name = "ApiError";
@@ -45,6 +54,17 @@ function jsonHeaders(): HeadersInit {
 // Sent by the API's AdminMiddleware when the user is authenticated but lacks
 // admin privileges. Treated like a 401: kill the session and bounce to /login.
 const ADMIN_DENIED_MESSAGE = "Access denied. Insufficient privileges.";
+
+/**
+ * A teacher reaching an admin-only endpoint is a permission gap, not a dead
+ * session — one stray query from a screen they are allowed to open used to log
+ * them out mid-click (BR-J9D2J9). Their session stays; the query fails and the
+ * caller renders its own error. For an admin the same 403 does mean the cookie
+ * outlived the role, so that one still ends the session.
+ */
+function shouldEndSessionOnAdminDenied(): boolean {
+  return getSessionUser()?.role !== "teacher";
+}
 
 let unauthorizedHandled = false;
 
@@ -81,13 +101,18 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     const errorResponse = json as LaravelErrorResponse;
-    if (response.status === 403 && errorResponse.message === ADMIN_DENIED_MESSAGE) {
+    if (
+      response.status === 403 &&
+      errorResponse.message === ADMIN_DENIED_MESSAGE &&
+      shouldEndSessionOnAdminDenied()
+    ) {
       await handleUnauthorized();
     }
     throw new ApiError(
       errorResponse.message || "An error occurred",
       response.status,
-      errorResponse.errors
+      errorResponse.errors,
+      json as Record<string, unknown>
     );
   }
 
@@ -120,13 +145,18 @@ export const api = {
     if (!response.ok) {
       const json = await response.json().catch(() => ({}));
       const errorResponse = json as LaravelErrorResponse;
-      if (response.status === 403 && errorResponse.message === ADMIN_DENIED_MESSAGE) {
+      if (
+        response.status === 403 &&
+        errorResponse.message === ADMIN_DENIED_MESSAGE &&
+        shouldEndSessionOnAdminDenied()
+      ) {
         await handleUnauthorized();
       }
       throw new ApiError(
         errorResponse.message || "An error occurred",
         response.status,
         errorResponse.errors,
+        json as Record<string, unknown>,
       );
     }
     return response.json() as Promise<T>;

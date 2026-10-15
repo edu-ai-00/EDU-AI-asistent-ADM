@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Clock,
@@ -18,9 +19,13 @@ import {
   Pencil,
   School,
   Bookmark,
+  MessageSquareText,
+  Ban,
+  UserCheck,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useUser } from "@/hooks/useUsers";
+import { useUser, useSetUserActive, useDeleteUser } from "@/hooks/useUsers";
 import { useUserEloProfile, useUserEloInteractions } from "@/hooks/useElo";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
@@ -34,17 +39,21 @@ import {
 import { EditUserDialog } from "./user-detail/EditUserDialog";
 import { CoursesTab } from "./user-detail/CoursesTab";
 import { QuizzesTab } from "./user-detail/QuizzesTab";
+import { OpenAnswersTab } from "./user-detail/OpenAnswersTab";
 import { ProgressTab } from "./user-detail/ProgressTab";
 import { SkillsTab } from "./user-detail/SkillsTab";
 import { EloTab } from "./user-detail/EloTab";
 import { ExercisesTab } from "./user-detail/ExercisesTab";
-import { AchievementsTab } from "./user-detail/AchievementsTab";
 import { SessionsSection } from "./user-detail/SessionsSection";
 import { WorkTimeTab } from "./WorkTimeTab";
 
 export function UserDetailPanel({ userId }: { userId: number }) {
-  const { isTeacher } = useAuth();
+  const { isTeacher, isAdmin, user: me } = useAuth();
   const { data: user, isLoading, error } = useUser(userId);
+  const setActive = useSetUserActive();
+  const deleteUser = useDeleteUser();
+  const router = useRouter();
+  const [activeError, setActiveError] = useState("");
   const { data: eloProfile } = useUserEloProfile(userId);
   const { data: eloInteractions } = useUserEloInteractions(userId);
   const [activeTab, setActiveTab] = useState<TabId>("courses");
@@ -121,6 +130,48 @@ export function UserDetailPanel({ userId }: { userId: number }) {
         )
       : 0;
 
+  // Deaktivovat / Reaktivovat (BR-Q3ZJ6Q). Admin-only, and never on your
+  // own account — the API refuses that too.
+  const canToggleActive = isAdmin && me?.id !== user.id;
+  const handleToggleActive = async () => {
+    const deactivating = !user.deactivated_at;
+    if (
+      deactivating &&
+      !confirm(
+        `Opravdu chcete deaktivovat účet ${user.name}? Účet bude okamžitě odhlášen ze všech zařízení a nepůjde se do něj přihlásit, dokud ho znovu neaktivujete. Data zůstanou zachovaná.`,
+      )
+    ) {
+      return;
+    }
+    setActiveError("");
+    try {
+      await setActive.mutateAsync({ id: user.id, active: !deactivating });
+    } catch (err) {
+      setActiveError(err instanceof Error ? err.message : "Změnu se nepodařilo uložit");
+    }
+  };
+
+  // Smazat (BR-FXWJ8D): removes the student with their whole history, no
+  // undo. Admin-only, and students only — a team member is taken off the
+  // team first; the API refuses both too.
+  const canDelete = isAdmin && (user.role ?? "student") === "student";
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        `Opravdu chcete smazat žáka ${user.name}? Účet i celá jeho historie (kurzy, postup, kvízy, odpovědi, chaty a procvičování) budou nevratně odstraněny. Tuto akci nelze vrátit zpět.`,
+      )
+    ) {
+      return;
+    }
+    setActiveError("");
+    try {
+      await deleteUser.mutateAsync(user.id);
+      router.push("/admin/users");
+    } catch (err) {
+      setActiveError(err instanceof Error ? err.message : "Žáka se nepodařilo smazat");
+    }
+  };
+
   const quizAttempts = user.quiz_attempts;
   const quizCount = quizAttempts?.length ?? 0;
   const progressCount = user.progress?.length ?? 0;
@@ -138,21 +189,72 @@ export function UserDetailPanel({ userId }: { userId: number }) {
         </Link>
         <span className="text-gray-300">/</span>
         <h1 className="text-lg font-semibold text-gray-900 truncate">{user.name}</h1>
-        <button
-          type="button"
-          onClick={() => setEditOpen(true)}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 hover:border-gray-400 hover:bg-gray-50 px-2.5 py-1.5 rounded-md transition-colors flex-shrink-0 ml-auto"
-        >
-          <Pencil className="w-3 h-3" />
-          Upravit
-        </button>
+        {/* Editing a user — role included — is admin-only; a teacher only
+            looks (BR-3JZWEY). */}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setEditOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 hover:border-gray-400 hover:bg-gray-50 px-2.5 py-1.5 rounded-md transition-colors flex-shrink-0 ml-auto"
+          >
+            <Pencil className="w-3 h-3" />
+            Upravit
+          </button>
+        )}
+        {canToggleActive && (
+          <button
+            type="button"
+            onClick={handleToggleActive}
+            disabled={setActive.isPending}
+            className={
+              user.deactivated_at
+                ? "inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-white border border-green-300 hover:border-green-400 hover:bg-green-50 px-2.5 py-1.5 rounded-md transition-colors flex-shrink-0 disabled:opacity-50"
+                : "inline-flex items-center gap-1.5 text-xs font-medium text-red-700 bg-white border border-red-300 hover:border-red-400 hover:bg-red-50 px-2.5 py-1.5 rounded-md transition-colors flex-shrink-0 disabled:opacity-50"
+            }
+          >
+            {user.deactivated_at ? <UserCheck className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
+            {user.deactivated_at ? "Reaktivovat" : "Deaktivovat"}
+          </button>
+        )}
+        {canDelete && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleteUser.isPending}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-red-600 border border-red-600 hover:bg-red-700 hover:border-red-700 px-2.5 py-1.5 rounded-md transition-colors flex-shrink-0 disabled:opacity-50"
+          >
+            <Trash2 className="w-3 h-3" />
+            Smazat
+          </button>
+        )}
       </div>
 
-      <EditUserDialog
-        user={{ id: user.id, name: user.name, email: user.email, role: user.role ?? "student", classroom_id: user.classroom_id }}
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-      />
+      {user.deactivated_at && (
+        <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <Ban className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>
+            Účet je deaktivovaný od {formatDate(user.deactivated_at)}
+            {user.deactivated_by ? ` (${user.deactivated_by.name})` : ""}. Nepřihlásí se v aplikaci
+            ani v administraci; data zůstávají zachovaná.
+          </span>
+        </div>
+      )}
+      {activeError && <p className="text-sm text-red-600">{activeError}</p>}
+
+      {editOpen && (
+        <EditUserDialog
+          user={{
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role ?? "student",
+            classroom_ids: user.classroom_ids,
+            school_ids: user.school_ids ?? [],
+            teaching_classroom_ids: user.teaching_classroom_ids ?? [],
+          }}
+          onClose={() => setEditOpen(false)}
+        />
+      )}
 
       {/* Full-width divider — negative margin to span parent padding */}
       <div className="-mx-6 border-t border-gray-200" />
@@ -196,11 +298,12 @@ export function UserDetailPanel({ userId }: { userId: number }) {
         <StatItem label="Ø postup" value={`${avgProgress}%`} icon={TrendingUp} color="bg-gray-100 text-gray-500" />
       </div>
 
-      {/* Tabbed section */}
+      {/* Tabbed section — admins get 8 tabs, wider than the 920px admin
+          column, so the strip wraps instead of spilling past it (BR-UNH7RR). */}
       <div>
         <div
           role="tablist"
-          className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground mb-4"
+          className="inline-flex flex-wrap items-center justify-start gap-y-1 rounded-lg bg-muted p-1 text-muted-foreground mb-4"
         >
           <TabButton
             active={activeTab === "courses"}
@@ -215,6 +318,12 @@ export function UserDetailPanel({ userId }: { userId: number }) {
             icon={ListChecks}
             label="Kvízy"
             count={quizCount}
+          />
+          <TabButton
+            active={activeTab === "open-answers"}
+            onClick={() => setActiveTab("open-answers")}
+            icon={MessageSquareText}
+            label="Otevřené odpovědi"
           />
           {!isTeacher && (
             <TabButton
@@ -245,16 +354,11 @@ export function UserDetailPanel({ userId }: { userId: number }) {
               onClick={() => setActiveTab("bookmarks")}
               icon={Bookmark}
               label="Procvičování"
-              count={user.bookmarks?.length ?? 0}
+              count={
+                user.practice_cards?.filter((c) => c.is_active).length ?? 0
+              }
             />
           )}
-          <TabButton
-            active={activeTab === "achievements"}
-            onClick={() => setActiveTab("achievements")}
-            icon={Award}
-            label="Úspěchy"
-            count={user.achievements?.length ?? user.stats?.achievements_count ?? 0}
-          />
           <TabButton
             active={activeTab === "work"}
             onClick={() => setActiveTab("work")}
@@ -274,6 +378,7 @@ export function UserDetailPanel({ userId }: { userId: number }) {
           {activeTab === "quizzes" && (
             <QuizzesTab attempts={quizAttempts} />
           )}
+          {activeTab === "open-answers" && <OpenAnswersTab userId={userId} />}
           {!isTeacher && activeTab === "progress" && (
             <ProgressTab progress={user.progress} />
           )}
@@ -283,13 +388,8 @@ export function UserDetailPanel({ userId }: { userId: number }) {
             <ExercisesTab
               bookmarks={user.bookmarks ?? []}
               courses={user.courses}
+              practiceCards={user.practice_cards ?? []}
               practiceReviews={user.practice_reviews ?? []}
-            />
-          )}
-          {activeTab === "achievements" && (
-            <AchievementsTab
-              achievements={user.achievements ?? []}
-              achievementsCount={user.stats?.achievements_count ?? 0}
             />
           )}
           {activeTab === "work" && <WorkTimeTab userId={userId} />}

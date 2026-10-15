@@ -85,11 +85,26 @@ export interface QuestionOption {
   go_to?: string;     // Navigation target per option (NEXT_STEP, AGAIN, END, step ID, or cross-course ref)
 }
 
+/**
+ * One rubric line for an AI-evaluated open question (BR-P745Q8).
+ *
+ * Criteria sit *on top of* the expected answer, they do not replace it: the
+ * expected answer stays the primary reference and criteria say what the
+ * feedback must walk through. Capped at four in the editor — past that the
+ * feedback stops being short, which the brief asks for explicitly.
+ */
+export interface QuestionCriterion {
+  id: string;           // Stable across edits; the AI echoes it back on scores
+  name: string;         // e.g. "Odolnost lesa"
+  description: string;  // What the student has to demonstrate
+  weight: number;       // 0-100, relative importance
+}
+
 export interface QuestionConfig {
   type: QuestionType;
   options?: QuestionOption[];     // For multiple_choice AND true_false
-  correct_answer?: string;        // For open questions
-  allow_photo?: boolean;          // For open questions: allow student to answer with a photo
+  correct_answer?: string;        // For open questions: what the AI grades against, and the offline comparison (one accepted answer per line). Never shown to the student
+  allow_photo?: boolean;         // For open questions: allow student to answer with a photo
   allow_multiple?: boolean;       // Allow selecting multiple options
   show_answers?: boolean;         // MCQ: show answer options to user (default true)
   correct_number?: number;        // Expected numeric answer (for numeric questions)
@@ -97,6 +112,29 @@ export interface QuestionConfig {
   show_solution?: boolean;        // Whether to show solution after answering (default true)
   solution?: string;              // Solution explanation shown after answering (supports markdown/LaTeX)
   solution_image?: StepImage;     // Optional image in solution
+  ai_evaluation?: boolean;        // Open questions: show the AI's feedback. Grading is always AI (BR-N26ACB); off = right/wrong + solution
+  /**
+   * @deprecated BR-FFVVYR's free-text criteria. Still read by the evaluator so
+   * courses authored before the structured editor keep behaving the same —
+   * write `ai_criteria_list` instead.
+   */
+  ai_criteria?: string;
+  ai_criteria_list?: QuestionCriterion[];  // Max 4 (BR-P745Q8)
+  /**
+   * AI-guided solving (BR-V9TQA7). Withholds `solution` while the student still
+   * has attempts left: they get the formative feedback, the answer field stays
+   * open, and the block waits. The explanation appears once they get there or
+   * once the last attempt is spent.
+   *
+   * Only meaningful together with `ai_evaluation` — without feedback there is
+   * nothing to retry against. Ignored in quiz mode, which allows one attempt.
+   */
+  ai_guided?: boolean;
+  ai_guided_attempts?: number;    // Attempts before the solution is revealed (default 3)
+  // Tri-state: undefined = inherit CourseV2.shuffle_answers, true/false = override it.
+  // Never write `false` when the author means "inherit" — that would pin the
+  // question against a later course-level change.
+  shuffle_options?: boolean;      // Randomize option order each time the question is shown
 }
 
 // ============================================================================
@@ -106,6 +144,13 @@ export interface QuestionConfig {
 export interface CourseV2 {
   export_type: ExportTypeV2;
   course_id: string;
+  /**
+   * Shared identity of this course's translation group (BR-AYACEK). Language
+   * variants each keep their own `course_id` but share this key, and the API
+   * refuses to save a variant whose structure diverges from its siblings.
+   * Omitted means "this course is its own group of one".
+   */
+  translation_key?: string;
   version: number;
   name: string;
   description: string;
@@ -118,7 +163,18 @@ export interface CourseV2 {
   only_once?: boolean;         // One-time course, student can't return after completion
   logged_only?: boolean;       // Only authenticated users can access this course
   quiz_evaluate?: boolean;     // Show correct/incorrect feedback and score in quiz mode
+  open_all_lessons?: boolean;  // All lessons unlocked — student picks any order
   only_quiz?: boolean;         // Course runs only as a quiz — no lessons
+  shuffle_answers?: boolean;   // Default for every question: randomize option order (per-question shuffle_options overrides)
+  /**
+   * Which attempt at an open question counts toward course progress (BR-P745Q8).
+   *
+   * Default "last": the most recent evaluated attempt, which is what a student
+   * working through feedback expects to see reflected. "best" suits a course
+   * where retrying is part of the design and the earlier attempt should not
+   * drag the result down.
+   */
+  open_answer_score?: "last" | "best";
   max_xp?: number;             // Maximum XP earnable from this course (hard cap)
   header_image?: HeaderImage;  // Course header/cover image
   ai_context?: string;         // Didactic notes & common-mistake solutions for the AI tutor
@@ -169,7 +225,7 @@ export interface BlockV2 {
   type: BlockType;  // "display" or "question"
   duration: string;
   xp?: number;      // Experience points awarded for completing this block
-  default_practice?: boolean;  // Exercise only: auto-add to practice/spaced repetition queue
+  default_practice?: boolean;  // Question/exercise blocks: auto-add to practice/spaced repetition queue
 
   // Didactics - GPF
   gpf: GPFData;
@@ -242,7 +298,7 @@ export interface FSRSParameters {
   initial_recall: number;       // R0 (default: 0.65)
   forgetting_rate: number;      // lambda (default: 0.25)
   repetitions: number;          // Display count (default: 0)
-  weight: number;               // Block weight (default: 1.0)
+  weight: number;               // Block weight (default: 5.0, per FSRS spec)
   min_interval: number;         // Min days (default: 1)
   max_interval: number;         // Max days (default: 90)
   skip_condition?: string;      // e.g., "GPF_mastery > 0.8"

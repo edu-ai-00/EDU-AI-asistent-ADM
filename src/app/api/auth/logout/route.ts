@@ -5,6 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const TOKEN_COOKIE = "edu-admin-token";
 const USER_COOKIE = "edu-admin-user";
+const REFRESH_AT_COOKIE = "edu-admin-token-refresh-at";
 // Legacy cookie from password-based auth
 const LEGACY_COOKIE = "edu-admin-auth";
 
@@ -33,6 +34,7 @@ export async function POST() {
   // Clear all auth cookies
   cookieStore.delete(TOKEN_COOKIE);
   cookieStore.delete(USER_COOKIE);
+  cookieStore.delete(REFRESH_AT_COOKIE);
   cookieStore.delete(LEGACY_COOKIE);
 
   return NextResponse.json({ success: true });

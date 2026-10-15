@@ -144,7 +144,9 @@ export function ExportEloDialog({ course, onClose }: ExportEloDialogProps) {
           {/* Column info */}
           <div className="text-xs text-gray-500 leading-relaxed">
             CSV (TSV) obsahuje sloupce: ID žáka, ID třídy, Blok, Kurz, Zdroj, Skóre,
-            Dimenze, ELO snapshot, ELO úlohy, Den, Otevřeno, Potvrzeno, Doba.
+            Dimenze, ELO snapshot, ELO úlohy, Den, Otevřeno, Potvrzeno, Doba,
+            Hint otevřen, Help otevřen, Asistent otevřen. Sloupce s nápovědou
+            uvádějí čas každého otevření, prázdné = žák pomoc nepoužil.
           </div>
 
           {meta?.total === 0 && (

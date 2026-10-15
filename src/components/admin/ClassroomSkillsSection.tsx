@@ -53,7 +53,7 @@ export function ClassroomSkillsSection({ classroomId }: ClassroomSkillsSectionPr
     if (!overview || !filteredStudents.length) return;
     const courseName = availableCourses.find((c) => c.id === selectedCourseId)?.name ?? "";
 
-    const header = ["Jméno", "Email", ...overview.skill_names].join(",");
+    const header = ["Přezdívka", "Email", ...overview.skill_names].join(",");
     const rows = filteredStudents.map((s) =>
       [
         `"${s.user.name || ""}"`,

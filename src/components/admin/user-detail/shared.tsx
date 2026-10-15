@@ -84,7 +84,7 @@ export function getStepAnswers(
 
 // ── Tab type ─────────────────────────────────────────────────────────────────
 
-export type TabId = "courses" | "quizzes" | "progress" | "skills" | "elo" | "bookmarks" | "achievements" | "work";
+export type TabId = "courses" | "quizzes" | "open-answers" | "progress" | "skills" | "elo" | "bookmarks" | "work";
 
 // ── Small components ─────────────────────────────────────────────────────────
 

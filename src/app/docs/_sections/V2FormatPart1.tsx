@@ -53,10 +53,11 @@ export function V2FormatPart1() {
           code={`interface CourseV2 {
   export_type: ExportTypeV2;    // Typ exportu (viz nize)
   course_id: string;            // Unikatni ID kurzu (auto-generovane, readonly)
+  translation_key?: string;     // Jazykova skupina — varianty tehoz kurzu (viz nize)
   version: number;              // Cislo verze kurzu
   name: string;                 // Nazev kurzu
   description: string;          // Popis kurzu
-  language: string;             // Jazyk ("cs", "en", ...)
+  language: string;             // Jazyk — kod z katalogu jazyku ("cs", "en", ...)
   author: string;               // Autor kurzu
   updated: string;              // ISO timestamp posledni zmeny
   status: BlockStatus;          // Stav kurzu
@@ -84,6 +85,44 @@ type ExportTypeV2 = "course_v2" | "exercise_v2" | "quiz_v2";`}
         <InfoBox type="info">
           <strong>Quiz mod:</strong> Pri exportu jako quiz_v2 se automaticky odfiltrují pouze Exercise bloky
           a odstrani se napovedy (hint, help). Podporuje hodnoceni znamkou (mark).
+        </InfoBox>
+
+        <h4 className="text-lg font-semibold text-gray-800 mt-6 mb-3">
+          Jazykove varianty (translation_key)
+        </h4>
+        <p className="text-gray-600 mb-3">
+          Kurz muze existovat ve vice jazycich. Kazda varianta je samostatny kurz
+          s vlastnim <code>course_id</code>, <code>pin</code> i <code>version</code>,
+          ale vsechny varianty sdileji stejny <code>translation_key</code>. Prazdny
+          klic znamena, ze kurz stoji sam.
+        </p>
+        <p className="text-gray-600 mb-3">
+          Server pri nahravani porovna <strong>strukturu</strong> kurzu se
+          sourozenci ve skupine a ulozeni odmitne, pokud se lisi. Mezi jazyky se
+          smi lisit pouze texty:
+        </p>
+        <Table
+          headers={["Smi se lisit", "Musi byt shodne"]}
+          rows={[
+            [
+              "name, description, content, hint, help, solution, texty a feedback odpovedi, correct_answer, ai_context, author",
+              "lesson_id, block_id, poradi (order), typy bloku a kroku",
+            ],
+            [
+              "course_id, pin, version, status, emoji, URL obrazku a videi",
+              "gpf, learning, fsrs, adaptation, xp, default_practice",
+            ],
+            [
+              "—",
+              "pocet a id odpovedi, is_correct, mark, score_koef, go_to, tolerance",
+            ],
+          ]}
+        />
+        <InfoBox type="warning">
+          <strong>Blokace ulozeni:</strong> pokud zmenite strukturu jen v jednom
+          jazyce, server vrati chybu se seznamem konkretnich rozdilu
+          (napr. <code>blocks.B1.steps.s1.question.options.o3</code>). Nejdriv
+          srovnejte vsechny varianty, pak ulozte.
         </InfoBox>
 
         <h4 className="text-lg font-semibold text-gray-800 mt-6 mb-3">

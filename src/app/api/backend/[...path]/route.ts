@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   API_BASE_URL,
   buildBackendHeaders,
-  getServerToken,
+  getFreshServerToken,
 } from "@/lib/server/auth";
 
 /**
@@ -11,7 +11,9 @@ import {
  * Reads the httpOnly Sanctum token cookie, injects it as Bearer, forwards the
  * request to the upstream API, and streams the response back to the browser.
  * This lets the admin UI keep the token httpOnly while still calling backend
- * endpoints from React components.
+ * endpoints from React components. It is also where the token is rotated
+ * while the panel is in use, so the session outlives the token's 48 hours
+ * (BR-9SX9BC).
  *
  * Mounted at /api/backend/* — `lib/api/client.ts` uses this as its base URL.
  */
@@ -35,7 +37,7 @@ const HOP_BY_HOP_RESPONSE_HEADERS = new Set([
 ]);
 
 async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
-  const token = await getServerToken();
+  const token = await getFreshServerToken();
   if (!token) {
     return NextResponse.json({ message: "Unauthenticated." }, { status: 401 });
   }
