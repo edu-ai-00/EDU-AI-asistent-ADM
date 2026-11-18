@@ -49,6 +49,17 @@ export interface StructureConflict {
   diff: string[];
 }
 
+/**
+ * Returned with a 409 when an editor save is based on a version of the course
+ * that someone else has since changed (BR-JUWYK2).
+ */
+export interface EditConflict {
+  base_version: number;
+  current_version: number;
+  current_status: Course["status"];
+  updated_at: string | null;
+}
+
 export interface Course {
   id: number;
   course_id: string;
@@ -116,6 +127,8 @@ export interface UploadResponse {
 export interface DownloadResponse {
   course_id: string;
   version: number;
+  /** The live status; the stored JSON can lag behind it (BR-JUWYK2). */
+  status?: Course["status"];
   download_url: string;
   expires_at: string;
   file_size: number;
@@ -344,6 +357,9 @@ export interface AdminUserDetail {
   teaching_classroom_ids?: number[];
   email_verified_at: string | null;
   created_at: string;
+  /** The device of the first sign-in to the app (BR-CMA88Y); null for older
+   *  accounts and sign-ins from older app builds. */
+  registration_device?: RegistrationDevice | null;
   is_guest: boolean;
   device_id: string | null;
   deactivated_at: string | null;
@@ -588,11 +604,27 @@ export interface AssetsResponse {
 }
 
 // Active work-time report (BR-9SAH2R).
+/** Device a work session was recorded on (BR-Y2TJ74). */
+export interface WorkSessionDevice {
+  /** web | android | ios | macos | windows | linux */
+  platform: string | null;
+  /** mobile | tablet | desktop */
+  type: string | null;
+}
+
+/** The device an account first signed in to the app from, and when (BR-CMA88Y). */
+export interface RegistrationDevice extends WorkSessionDevice {
+  at: string;
+}
+
 export interface WorkTimeSession {
   course_id: string;
   start: string;
   end: string;
   duration: number;
+  /** Devices used during the session, in order of first use. Empty when the
+   *  app did not report one (sessions from older app builds). */
+  devices?: WorkSessionDevice[];
 }
 
 export interface WorkTimeReport {

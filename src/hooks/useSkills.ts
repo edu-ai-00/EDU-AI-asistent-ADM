@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
+import { useAuth } from "@/hooks/useAuth";
 import type {
   SkillVector,
   CreateVectorInput,
@@ -20,18 +21,30 @@ const SKILL_CONFIG_KEY = ["skill-config"];
 // Vectors
 // ============================================================================
 
+/**
+ * The vector catalogue is admin-only, so for a signed-in teacher this stays
+ * idle rather than firing a request that comes back 403 (BR-JQMYFT) — the same
+ * guard useSchools() needs for the same reason (BR-38FYMX). The Kurzy list
+ * reads it only to label a card with the course's GPF vector, so a teacher
+ * just gets a card without that label.
+ */
 export function useVectors() {
+  const { isAdmin } = useAuth();
+
   return useQuery({
     queryKey: VECTORS_KEY,
     queryFn: () => api.get<SkillVector[]>("/admin/vectors"),
+    enabled: isAdmin,
   });
 }
 
 export function useVector(id: string | undefined) {
+  const { isAdmin } = useAuth();
+
   return useQuery({
     queryKey: [...VECTORS_KEY, id],
     queryFn: () => api.get<SkillVector>(`/admin/vectors/${id}`),
-    enabled: !!id,
+    enabled: isAdmin && !!id,
   });
 }
 
@@ -73,11 +86,13 @@ export function useDeleteVector() {
 // ============================================================================
 
 export function useVectorDimensions(vectorId: string | undefined) {
+  const { isAdmin } = useAuth();
+
   return useQuery({
     queryKey: [...VECTORS_KEY, vectorId, "dimensions"],
     queryFn: () =>
       api.get<VectorDimension[]>(`/admin/vectors/${vectorId}/dimensions`),
-    enabled: !!vectorId,
+    enabled: isAdmin && !!vectorId,
   });
 }
 

@@ -10,13 +10,8 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { schoolOptions } from "@/lib/school-filter";
 import { schoolIdsOfClasses, type PickableClass } from "@/lib/user-school-classes";
-import { SchoolClassPicker } from "./SchoolClassPicker";
+import { SchoolClassPicker, TEAM_CLASS_HINT, TEAM_SCHOOL_HINT } from "./SchoolClassPicker";
 
-const TEAM_SCHOOL_HINT: Record<string, string> = {
-  teacher:
-    "Učitel uvidí v seznamu i ostatní třídy těchto škol, ale nebude si moci zobrazit jejich detail.",
-  admin: "Admin vidí všechny třídy i bez přiřazení; škola ho zařadí v seznamech a rozesílkách.",
-};
 const STUDENT_SCHOOL_HINT =
   "Žák patří ke škole přes své třídy — výběr školy jen určí, které třídy se nabídnou.";
 
@@ -133,7 +128,7 @@ export function EditUserDialog({
             classes={classes}
             classIds={teachingIds}
             onClassIdsChange={setTeachingIds}
-            classHint="Třídy, které učí. Změna škol přiřazené třídy sama neodebere."
+            classHint={TEAM_CLASS_HINT}
           />
         ) : (
           <SchoolClassPicker

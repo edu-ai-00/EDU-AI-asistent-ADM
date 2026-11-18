@@ -29,6 +29,9 @@ yarn-error.log*
 !.env.example
 .env*.local
 
+# sentry (source map upload token for local builds)
+.env.sentry-build-plugin
+
 # vercel
 .vercel
 

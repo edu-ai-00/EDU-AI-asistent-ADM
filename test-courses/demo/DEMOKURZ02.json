@@ -1,0 +1,714 @@
+{
+  "export_type": "course_v2",
+  "course_id": "DEMOKURZ02",
+  "version": 1,
+  "name": "Demo kurz – začíná kvízem, lekce postupně",
+  "description": "Testovací kurz: nejdřív Kvíz, lekce se odemykají postupně, odpovědi se míchají, u otevřených otázek se počítá nejlepší pokus.",
+  "language": "cs",
+  "author": "EduAI Team",
+  "updated": "2026-10-20T18:00:00.000Z",
+  "status": "published",
+  "pin": "424243",
+  "header_image": {
+    "url": "https://pub-4e0c94219f454e70a63b7f41b436f85f.r2.dev/assets/DEMOKURZ01/cover.png",
+    "alt": "Demo kurz EDU AI"
+  },
+  "starts_with_quiz": true,
+  "open_all_lessons": false,
+  "quiz_evaluate": true,
+  "shuffle_answers": true,
+  "open_answer_score": "best",
+  "lessons": [
+    {
+      "lesson_id": "DK2_L1",
+      "version": 1,
+      "name": "1 · Úvod",
+      "description": "Výklad a dvě cvičení.",
+      "order": 1,
+      "blocks": [
+        {
+          "block_id": "DK2L1B01",
+          "order": 1
+        },
+        {
+          "block_id": "DK2L1B02",
+          "order": 2
+        },
+        {
+          "block_id": "DK2L1B03",
+          "order": 3
+        }
+      ]
+    },
+    {
+      "lesson_id": "DK2_L2",
+      "version": 1,
+      "name": "2 · Otázky",
+      "description": "Otevřená otázka a číselné cvičení.",
+      "order": 2,
+      "blocks": [
+        {
+          "block_id": "DK2L2B01",
+          "order": 1
+        },
+        {
+          "block_id": "DK2L2B02",
+          "order": 2
+        }
+      ]
+    },
+    {
+      "lesson_id": "DK2_L3",
+      "version": 1,
+      "name": "3 · Konec",
+      "description": "Závěr kurzu.",
+      "order": 3,
+      "blocks": [
+        {
+          "block_id": "DK2L3B01",
+          "order": 1
+        }
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "export_type": "block_v2",
+      "block_id": "DK2L1B01",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "display",
+      "duration": "2 min",
+      "xp": 10,
+      "gpf": {
+        "domain": null,
+        "construct": null,
+        "subconstruct": null,
+        "grade": null,
+        "level": 2,
+        "vector": [],
+        "kb_vector": []
+      },
+      "learning": {
+        "concepts": [
+          "Postupné lekce"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "text",
+          "content": "## Lekce 1\n\nTenhle kurz **začíná Kvízem** a lekce se odemykají postupně.\n\n> **🧪 Co má být vidět**\n> Než dokončíš Kvíz, jsou lekce zamčené.\n> Lekce 2 se odemkne až po dokončení lekce 1.\n> Možnosti v otázkách jsou zamíchané (nastavení kurzu), pravda/nepravda se nemíchá.",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "export_type": "block_v2",
+      "block_id": "DK2L1B02",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "exercise",
+      "duration": "2 min",
+      "xp": 20,
+      "gpf": {
+        "domain": "Algebra",
+        "construct": "Číselné výrazy",
+        "subconstruct": "A1.1 Číselné výrazy – vyhodnotí",
+        "grade": 7,
+        "level": 2,
+        "vector": [],
+        "kb_vector": [],
+        "relation_vector": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "elo_vector": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          3.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "learning": {
+        "concepts": [
+          "Míchání"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "question",
+          "question": {
+            "type": "multiple_choice",
+            "options": [
+              {
+                "id": "opt_1",
+                "text": "A – správně",
+                "is_correct": true
+              },
+              {
+                "id": "opt_2",
+                "text": "B",
+                "is_correct": false
+              },
+              {
+                "id": "opt_3",
+                "text": "C",
+                "is_correct": false
+              },
+              {
+                "id": "opt_4",
+                "text": "D",
+                "is_correct": false
+              }
+            ],
+            "show_solution": true,
+            "solution": "Správně je A."
+          },
+          "content": "Která možnost je správná? (Pořadí je zamíchané.)",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "export_type": "block_v2",
+      "block_id": "DK2L1B03",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "exercise",
+      "duration": "2 min",
+      "xp": 20,
+      "gpf": {
+        "domain": "Číslo a operace",
+        "construct": "Zlomky",
+        "subconstruct": "N3.3 Zlomky – převádí",
+        "grade": 7,
+        "level": 2,
+        "vector": [],
+        "kb_vector": [],
+        "relation_vector": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "elo_vector": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          3.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "learning": {
+        "concepts": [
+          "Zlomky"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "question",
+          "question": {
+            "type": "true_false",
+            "options": [
+              {
+                "id": "true",
+                "text": "True (Ano)",
+                "is_correct": true
+              },
+              {
+                "id": "false",
+                "text": "False (Ne)",
+                "is_correct": false
+              }
+            ]
+          },
+          "content": "Platí, že $\\frac{4}{8} = \\frac{1}{2}$?",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "export_type": "block_v2",
+      "block_id": "DK2L2B01",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "question",
+      "duration": "2 min",
+      "xp": 20,
+      "gpf": {
+        "domain": "Číslo a operace",
+        "construct": "Násobení a dělení",
+        "subconstruct": "N6.1 Násobení a dělení",
+        "grade": 7,
+        "level": 2,
+        "vector": [],
+        "kb_vector": [],
+        "relation_vector": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "elo_vector": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "learning": {
+        "concepts": [
+          "Násobení"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "question",
+          "question": {
+            "type": "open",
+            "ai_evaluation": true,
+            "correct_answer": "12",
+            "show_solution": true,
+            "solution": "$3 \\cdot 4 = 12$"
+          },
+          "content": "Kolik je $3 \\cdot 4$? Napiš i krátký postup.\n\n> **🧪 Co má být vidět**\n> Kurz počítá u otevřených otázek **nejlepší** pokus: když odpověď přepracuješ hůř, výsledek se nezhorší.",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "export_type": "block_v2",
+      "block_id": "DK2L2B02",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "exercise",
+      "duration": "2 min",
+      "xp": 20,
+      "gpf": {
+        "domain": "Číslo a operace",
+        "construct": "Zlomky",
+        "subconstruct": "N3.3 Zlomky – převádí",
+        "grade": 7,
+        "level": 2,
+        "vector": [],
+        "kb_vector": [],
+        "relation_vector": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "elo_vector": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          3.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "learning": {
+        "concepts": [
+          "Převod zlomků"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "question",
+          "question": {
+            "type": "numeric",
+            "correct_number": 0.75,
+            "tolerance": 0
+          },
+          "content": "Zapiš $\\frac{3}{4}$ jako desetinné číslo.",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "export_type": "block_v2",
+      "block_id": "DK2L3B01",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "display",
+      "duration": "2 min",
+      "xp": 10,
+      "gpf": {
+        "domain": null,
+        "construct": null,
+        "subconstruct": null,
+        "grade": null,
+        "level": 2,
+        "vector": [],
+        "kb_vector": []
+      },
+      "learning": {
+        "concepts": [
+          "Postupné lekce"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "text",
+          "content": "## Konec\n\nPoslední lekce kurzu.\n\n> **🧪 Co má být vidět**\n> Průběh kurzu ukazuje všechny lekce hotové.",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    }
+  ]
+}

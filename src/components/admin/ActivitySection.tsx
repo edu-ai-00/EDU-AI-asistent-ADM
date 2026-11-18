@@ -7,6 +7,7 @@ import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { useClassrooms } from "@/hooks/useClassrooms";
 import { useActivityReport, activityQueryString } from "@/hooks/useActivity";
 import { api } from "@/lib/api/client";
+import { listView } from "@/lib/list-view";
 import type { ActivityRow } from "@/types/api";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -76,6 +77,16 @@ export function ActivitySection() {
   }, [classrooms]);
 
   const rows = data?.rows ?? [];
+
+  // A load that failed is not an empty report (BR-DN8BWW): without this the
+  // page showed the error and „nejsou žádné záznamy aktivity“ side by side.
+  const view = listView({
+    isLoading,
+    hasError: error != null,
+    hasData: data !== undefined,
+    rowCount: rows.length,
+  });
+  const errorMessage = error instanceof Error ? error.message : "Nepodařilo se načíst data";
 
   const totals = useMemo(() => {
     const t: Partial<Record<keyof ActivityRow, number>> = {};
@@ -169,10 +180,10 @@ export function ActivitySection() {
         </Button>
       </div>
 
-      {(error || exportError) && (
-        <div className="flex items-center gap-2 text-red-600 text-sm">
+      {(exportError || view.inlineError) && (
+        <div role="alert" className="flex items-center gap-2 text-red-600 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{exportError ?? (error instanceof Error ? error.message : "Nepodařilo se načíst data")}</span>
+          <span>{exportError ?? errorMessage}</span>
         </div>
       )}
 
@@ -188,9 +199,18 @@ export function ActivitySection() {
       </p>
 
       {/* Table */}
-      {isLoading ? (
+      {view.body === "loading" ? (
         <LoadingPage />
-      ) : rows.length === 0 ? (
+      ) : view.body === "error" ? (
+        <div
+          role="alert"
+          className="flex flex-col items-center gap-2 text-center py-12 border border-dashed border-red-200 rounded-lg"
+        >
+          <AlertCircle className="w-8 h-8 text-red-500" />
+          <p className="text-sm text-gray-700">Nepodařilo se načíst data aktivity.</p>
+          <p className="text-xs text-gray-400">{errorMessage}</p>
+        </div>
+      ) : view.body === "empty" ? (
         <div className="text-center py-12 text-gray-500 text-sm border border-dashed border-gray-300 rounded-lg">
           Pro zvolené filtry nejsou žádné záznamy aktivity.
         </div>

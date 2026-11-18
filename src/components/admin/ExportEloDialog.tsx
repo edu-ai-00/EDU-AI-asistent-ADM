@@ -53,24 +53,11 @@ export function ExportEloDialog({ course, onClose }: ExportEloDialogProps) {
 
     setIsExporting(true);
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-      // Get token from cookie
-      const tokenMatch = document.cookie.match(/(?:^|;\s*)edu-admin-token=([^;]*)/);
-      const token = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null;
-
-      const headers: HeadersInit = { Accept: "text/tab-separated-values" };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      const adminKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY || "";
-      if (adminKey) {
-        headers["X-Admin-Key"] = adminKey;
-      }
-
-      const response = await fetch(
-        `${API_BASE_URL}/admin/elo/interactions/course/${course.course_id}/export`,
-        { headers }
+      // Through the /api/backend proxy like every other call: it adds the
+      // httpOnly session token server-side, so the browser needs no credential.
+      const response = await api.getRaw(
+        `/admin/elo/interactions/course/${course.course_id}/export`,
+        "text/tab-separated-values"
       );
 
       if (!response.ok) {

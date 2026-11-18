@@ -6,6 +6,8 @@ import Image from "next/image";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { getSessionUser } from "@/lib/auth/session-user";
+import { setSentryUser } from "@/lib/sentry/user";
 
 type Step = "email" | "code";
 
@@ -65,6 +67,8 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // The verify response has just set the edu-admin-user cookie.
+        setSentryUser(getSessionUser());
         router.push("/admin");
         router.refresh();
       } else {

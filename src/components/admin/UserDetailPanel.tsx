@@ -23,14 +23,16 @@ import {
   Ban,
   UserCheck,
   Trash2,
+  Monitor,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUser, useSetUserActive, useDeleteUser } from "@/hooks/useUsers";
 import { useUserEloProfile, useUserEloInteractions } from "@/hooks/useElo";
+import { useUserWorkTime } from "@/hooks/useWorkTime";
+import { formatDuration, userTotalSeconds } from "@/lib/work-time";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   formatDate,
-  formatSeconds,
   safeParseCourseProgress,
   StatItem,
   TabButton,
@@ -45,7 +47,8 @@ import { SkillsTab } from "./user-detail/SkillsTab";
 import { EloTab } from "./user-detail/EloTab";
 import { ExercisesTab } from "./user-detail/ExercisesTab";
 import { SessionsSection } from "./user-detail/SessionsSection";
-import { WorkTimeTab } from "./WorkTimeTab";
+import { WorkTimeTab, DEVICE_TYPE_ICONS } from "./WorkTimeTab";
+import { deviceLabel } from "@/lib/session-device";
 
 export function UserDetailPanel({ userId }: { userId: number }) {
   const { isTeacher, isAdmin, user: me } = useAuth();
@@ -56,6 +59,7 @@ export function UserDetailPanel({ userId }: { userId: number }) {
   const [activeError, setActiveError] = useState("");
   const { data: eloProfile } = useUserEloProfile(userId);
   const { data: eloInteractions } = useUserEloInteractions(userId);
+  const { data: workTime } = useUserWorkTime(userId);
   const [activeTab, setActiveTab] = useState<TabId>("courses");
   const [editOpen, setEditOpen] = useState(false);
 
@@ -99,24 +103,9 @@ export function UserDetailPanel({ userId }: { userId: number }) {
     if (quizOnly && pd?.quiz_completed) return true;
     return false;
   }).length;
-  // "Celkový čas": the course-level time_spent_seconds is only ever populated
-  // by the app from quiz completions and stays 0 for lessons / web users, so
-  // it's almost always empty. Recover the real time from its granular sources —
-  // per-quiz and per-lesson — and take the max so we never double-count when
-  // the course-level cache *is* set (it mirrors quiz time).
-  const courseTime = user.courses.reduce(
-    (sum, c) => sum + (c.time_spent_seconds ?? 0),
-    0,
-  );
-  const quizTime = (user.quiz_attempts ?? []).reduce(
-    (sum, a) => sum + (a.time_spent_seconds ?? 0),
-    0,
-  );
-  const lessonTime = (user.progress ?? []).reduce(
-    (sum, p) => sum + (p.time_spent_seconds ?? 0),
-    0,
-  );
-  const totalTime = Math.max(courseTime, quizTime + lessonTime);
+  // "Celkový čas" is the same active work time as the "Čas práce" tab, so
+  // the two always agree (BR-3VDABQ); see userTotalSeconds for the fallback.
+  const totalTime = userTotalSeconds(user, workTime?.total_seconds);
   const avgProgress =
     coursesEnrolled > 0
       ? Math.round(
@@ -268,6 +257,13 @@ export function UserDetailPanel({ userId }: { userId: number }) {
         ) : (
           <StatItem label="Registrace" value={formatDate(user.created_at)} icon={Clock} color="bg-gray-100 text-gray-500" />
         )}
+        {/* The device of the first sign-in to the app (BR-CMA88Y). */}
+        <StatItem
+          label="Registrační zařízení"
+          value={(user.registration_device && deviceLabel(user.registration_device)) || "—"}
+          icon={(user.registration_device?.type && DEVICE_TYPE_ICONS[user.registration_device.type]) || Monitor}
+          color="bg-gray-100 text-gray-500"
+        />
         {(user.is_guest || (user.role && user.role !== "student")) && (
           <StatItem
             label="Typ"
@@ -294,7 +290,7 @@ export function UserDetailPanel({ userId }: { userId: number }) {
 
         {/* Course stats */}
         <StatItem label="Kurzy" value={`${coursesCompleted}/${coursesEnrolled}`} icon={BookOpen} color="bg-gray-100 text-gray-500" />
-        <StatItem label="Celkový čas" value={formatSeconds(totalTime || null)} icon={Timer} color="bg-gray-100 text-gray-500" />
+        <StatItem label="Celkový čas" value={totalTime > 0 ? formatDuration(totalTime) : "-"} icon={Timer} color="bg-gray-100 text-gray-500" />
         <StatItem label="Ø postup" value={`${avgProgress}%`} icon={TrendingUp} color="bg-gray-100 text-gray-500" />
       </div>
 
@@ -392,7 +388,7 @@ export function UserDetailPanel({ userId }: { userId: number }) {
               practiceReviews={user.practice_reviews ?? []}
             />
           )}
-          {activeTab === "work" && <WorkTimeTab userId={userId} />}
+          {activeTab === "work" && <WorkTimeTab userId={userId} registration={user.registration_device} />}
         </div>
       </div>
 

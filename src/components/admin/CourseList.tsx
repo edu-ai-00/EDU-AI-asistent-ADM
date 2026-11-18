@@ -4,7 +4,13 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, AlertCircle, Upload, Eye, EyeOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCourses, useDeleteCourse, useUploadCourse, useRestoreCourse } from "@/hooks/useCourses";
+import {
+  useCourses,
+  useDeleteCourse,
+  useUploadCourse,
+  useRestoreCourse,
+  fetchCourseForEdit,
+} from "@/hooks/useCourses";
 import { useVectors } from "@/hooks/useSkills";
 import { useLanguages, languageLabel } from "@/hooks/useLanguages";
 import { CourseCard } from "./CourseCard";
@@ -14,8 +20,7 @@ import { LoadingPage, LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { UploadCourseModal } from "./UploadCourseModal";
 import { ExportEloDialog } from "./ExportEloDialog";
 import { ExportAnswersDialog } from "./ExportAnswersDialog";
-import type { Course, DownloadResponse } from "@/types/api";
-import type { CourseV2 } from "@/types/block-v2";
+import type { Course } from "@/types/api";
 import { api } from "@/lib/api/client";
 
 export function CourseList() {
@@ -60,7 +65,9 @@ export function CourseList() {
     return siblings;
   }, [courses]);
 
-  // Fetch GPF vectors for name lookup (vector_id is on the Course object directly)
+  // Fetch GPF vectors for name lookup (vector_id is on the Course object
+  // directly). Admin-only — for a teacher the hook stays idle and the card
+  // simply carries no vector label (BR-JQMYFT).
   const { data: vectors } = useVectors();
   const vectorMap = useMemo(
     () => new Map(vectors?.map((v) => [v.id, v.name]) ?? []),
@@ -115,15 +122,13 @@ export function CourseList() {
   const handleEdit = async (course: Course) => {
     try {
       setLoadingCourseId(course.id);
-      // Download the course JSON from API
-      const downloadInfo = await api.get<DownloadResponse>(`/admin/courses/${course.id}/download`);
-      const response = await fetch(downloadInfo.download_url);
-      if (!response.ok) throw new Error("Failed to download course");
-      const courseData = await response.json() as CourseV2;
+      // Download the course JSON from API, with the version the editor will
+      // save against (BR-JUWYK2)
+      const { courseData, meta } = await fetchCourseForEdit(course);
 
       // Store in sessionStorage for the editor to pick up
       sessionStorage.setItem("editCourse", JSON.stringify(courseData));
-      sessionStorage.setItem("editCourseMeta", JSON.stringify(course));
+      sessionStorage.setItem("editCourseMeta", JSON.stringify(meta));
 
       // Navigate to the editor
       router.push("/?edit=true");

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search, X } from "lucide-react";
+import { pluralCs } from "@/lib/notifications";
 import {
   ELSEWHERE_GROUP,
   classGroups,
@@ -11,15 +12,17 @@ import {
   type PickableSchool,
 } from "@/lib/user-school-classes";
 
-// Copy of pluralCs from lib/notifications, which this release does not ship.
-// The next staging → main release brings that module back; import it from
-// there again then.
-function pluralCs(n: number, one: string, few: string, many: string): string {
-  const abs = Math.abs(n);
-  if (abs === 1) return one;
-  if (abs >= 2 && abs <= 4) return few;
-  return many;
-}
+/**
+ * What the two picks mean for a team member — shared by "Upravit uživatele"
+ * and the team roster's "Upravit člena týmu" (BR-6W6R5Y), so both dialogs
+ * explain the same thing.
+ */
+export const TEAM_SCHOOL_HINT: Record<string, string> = {
+  teacher:
+    "Učitel uvidí v seznamu i ostatní třídy těchto škol, ale nebude si moci zobrazit jejich detail.",
+  admin: "Admin vidí všechny třídy i bez přiřazení; škola ho zařadí v seznamech a rozesílkách.",
+};
+export const TEAM_CLASS_HINT = "Třídy, které učí. Změna škol přiřazené třídy sama neodebere.";
 
 const labelClass = "block text-sm font-medium text-gray-700";
 const listClass =

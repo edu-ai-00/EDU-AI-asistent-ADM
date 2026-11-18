@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import type { Classroom } from "@/types/classroom";
 
 /** Four characters, A–Z or 0–9 — the same rule the API enforces. */
@@ -34,6 +35,14 @@ export function EditClassroomModal({
     setJoinCode(classroom.join_code ?? "");
   }, [classroom]);
 
+  const handleClose = useCallback(() => {
+    setError(null);
+    onClose();
+  }, [onClose]);
+
+  // ESC does what Zrušit does (BR-96MNEE).
+  useEscapeKey(isOpen, handleClose);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,11 +59,6 @@ export function EditClassroomModal({
     }
     setError(null);
     onSave(trimmed, code || null);
-  };
-
-  const handleClose = () => {
-    setError(null);
-    onClose();
   };
 
   const shownError = error ?? serverError;

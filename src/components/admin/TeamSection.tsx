@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Plus,
   Trash2,
@@ -27,11 +27,20 @@ import {
   TeamStatus,
 } from "@/hooks/useTeam";
 import { useSetUserActive } from "@/hooks/useUsers";
+import { useClassrooms } from "@/hooks/useClassrooms";
+import { useSchools } from "@/hooks/useSchools";
 import { useAuth } from "@/hooks/useAuth";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { cn } from "@/lib/utils";
 import { ALL_SCHOOLS, listedAsTeacher, matchesSchool, schoolOptions } from "@/lib/school-filter";
+import type { PickableClass } from "@/lib/user-school-classes";
 import { SchoolPicker } from "./SchoolPicker";
 import { SchoolFilterSelect } from "./SchoolFilterSelect";
+import {
+  SchoolClassPicker,
+  TEAM_CLASS_HINT,
+  TEAM_SCHOOL_HINT,
+} from "./user-detail/SchoolClassPicker";
 
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString("cs-CZ");
 
@@ -92,7 +101,16 @@ export function TeamSection({ roleFilter }: { roleFilter?: "teacher" | "admin" }
   const [editEmail, setEditEmail] = useState("");
   const [editRole, setEditRole] = useState<TeamRole>("teacher");
   const [editSchoolIds, setEditSchoolIds] = useState<number[]>([]);
+  const [editClassIds, setEditClassIds] = useState<number[]>([]);
   const [editError, setEditError] = useState("");
+
+  // The edit dialog's two steps (BR-6W6R5Y), same lists as "Upravit uživatele".
+  const { data: allSchools, isLoading: schoolsLoading } = useSchools();
+  const { data: classrooms } = useClassrooms();
+  const editClasses: PickableClass[] = useMemo(
+    () => (classrooms ?? []).map((c) => ({ id: c.id, name: c.name, school: c.school ?? null })),
+    [classrooms]
+  );
 
   // Schools only mean something for teachers (BR-R84FVD): they widen a
   // teacher's classroom list, while an admin already sees every class.
@@ -131,6 +149,10 @@ export function TeamSection({ roleFilter }: { roleFilter?: "teacher" | "admin" }
     e.preventDefault();
     setFormError("");
     setNotice("");
+    // Read before the invite refetches the roster (BR-98XQ58).
+    const previous = (members ?? []).find(
+      (m) => m.email.toLowerCase() === email.trim().toLowerCase()
+    );
 
     try {
       const member = await createMutation.mutateAsync({
@@ -150,13 +172,34 @@ export function TeamSection({ roleFilter }: { roleFilter?: "teacher" | "admin" }
               : "Mezi učiteli se zobrazí, až mu přiřadíte školu.")
         );
       }
+      // A teacher invited as an admin is promoted in place; only one who
+      // never accepted their invite gets a new one (BR-98XQ58).
+      if (role === "admin" && previous?.role === "teacher") {
+        const invite: Record<TeamStatus, string> = {
+          invited: "Pozvánku ještě nepřijal, proto mu odešla nová.",
+          expired: "Pozvánku ještě nepřijal, proto mu odešla nová.",
+          active: "Účet už je aktivní, žádná pozvánka se neposílá.",
+          deactivated: "Účet zůstává deaktivovaný, dokud ho znovu neaktivujete.",
+        };
+        setNotice(
+          `Učitel ${member.name} (${member.email}) je nyní adminem — účet, jeho třídy i školy ` +
+            `zůstávají. ${invite[member.status]}`
+        );
+      }
       setName("");
       setEmail("");
       setRole("teacher");
       setSchoolIds([]);
       setShowForm(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Chyba při vytváření účtu");
+      // Since BR-98XQ58 the endpoint refuses only an invite into the role the
+      // account already has; this screen says what to do about it instead.
+      const message = err instanceof Error ? err.message : "";
+      setFormError(
+        message === "Tento uživatel už je členem týmu."
+          ? "Tento e-mail už patří členovi týmu se stejnou rolí. Pokud pozvánku nepřijal, pošlete ji znovu ze seznamu."
+          : message || "Chyba při vytváření účtu"
+      );
     }
   };
 
@@ -166,11 +209,18 @@ export function TeamSection({ roleFilter }: { roleFilter?: "teacher" | "admin" }
     setEditEmail(member.email);
     setEditRole(member.role);
     setEditSchoolIds((member.schools ?? []).map((s) => s.id));
+    setEditClassIds(member.teaching_classroom_ids ?? []);
     setEditError("");
   };
 
+  const closeEdit = useCallback(() => setEditMember(null), []);
+
+  // ESC does what Zrušit does (BR-96MNEE).
+  useEscapeKey(editMember !== null, closeEdit);
+
   // On the Učitelé tab an admin's schools are what list them there, so the
-  // picker is how they come off it again (BR-A7KEZ6).
+  // picker is how they come off it again (BR-A7KEZ6). It gates the classes
+  // with them: a member on their way to `student` teaches nothing.
   const editShowsSchools =
     editRole === "teacher" || (editRole === "admin" && roleFilter === "teacher");
 
@@ -185,8 +235,10 @@ export function TeamSection({ roleFilter }: { roleFilter?: "teacher" | "admin" }
         name: editName,
         email: editEmail,
         role: editRole,
-        // Left out wherever the picker is hidden, so the schools are untouched.
+        // Left out wherever the picker is hidden, so schools and classes
+        // are untouched.
         school_ids: editShowsSchools ? editSchoolIds : undefined,
+        teaching_classroom_ids: editShowsSchools ? editClassIds : undefined,
       });
       setEditMember(null);
     } catch (err) {
@@ -324,6 +376,8 @@ export function TeamSection({ roleFilter }: { roleFilter?: "teacher" | "admin" }
               povýší na člena týmu (zůstane stejný účet i jeho data), žádný nový se nevytvoří.
               {role === "teacher" &&
                 " Pokud patří adminovi, zůstane adminem a jen se zařadí do vybraných škol."}
+              {role === "admin" &&
+                " Pokud patří učiteli, povýší se na admina a jeho třídy i školy mu zůstanou."}
             </p>
             {formError && (
               <p className="text-sm text-red-600">{formError}</p>
@@ -347,54 +401,69 @@ export function TeamSection({ roleFilter }: { roleFilter?: "teacher" | "admin" }
       {/* Edit dialog */}
       {editMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Upravit člena týmu</h3>
               <button
-                onClick={() => setEditMember(null)}
+                onClick={closeEdit}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <form onSubmit={handleEdit} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Jméno</label>
-                <Input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  required
-                />
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Jméno</label>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">E-mail</label>
+                  <Input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Role</label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as TeamRole)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="teacher">Učitel</option>
+                    <option value="admin">Admin</option>
+                    <option value="student">Student</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">E-mail</label>
-                <Input
-                  type="email"
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Role</label>
-                <select
-                  value={editRole}
-                  onChange={(e) => setEditRole(e.target.value as TeamRole)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                >
-                  <option value="teacher">Učitel</option>
-                  <option value="admin">Admin</option>
-                  <option value="student">Student</option>
-                </select>
-                {editRole === "student" && (
-                  <p className="text-xs text-amber-700 mt-1.5">
-                    Uložením přijde {editMember.name} o přístup do administrace a zmizí ze
-                    seznamu týmu. Účet i data zůstanou zachované.
-                  </p>
-                )}
-              </div>
+              {editRole === "student" && (
+                <p className="text-xs text-amber-700">
+                  Uložením přijde {editMember.name} o přístup do administrace a zmizí ze
+                  seznamu týmu. Účet i data zůstanou zachované.
+                </p>
+              )}
+              {/* Schools and the classes they teach, the same two steps as
+                  "Upravit uživatele" (BR-6W6R5Y) — until then this dialog
+                  never said which classes the teacher had. */}
               {editShowsSchools && (
-                <SchoolPicker value={editSchoolIds} onChange={setEditSchoolIds} />
+                <SchoolClassPicker
+                  schools={allSchools ?? []}
+                  schoolsLoading={schoolsLoading}
+                  schoolIds={editSchoolIds}
+                  onSchoolIdsChange={setEditSchoolIds}
+                  schoolHint={TEAM_SCHOOL_HINT[editRole] ?? ""}
+                  classes={editClasses}
+                  classIds={editClassIds}
+                  onClassIdsChange={setEditClassIds}
+                  classHint={TEAM_CLASS_HINT}
+                />
               )}
               {editError && (
                 <p className="text-sm text-red-600">{editError}</p>
@@ -402,7 +471,7 @@ export function TeamSection({ roleFilter }: { roleFilter?: "teacher" | "admin" }
               <div className="flex gap-2 justify-end pt-2">
                 <button
                   type="button"
-                  onClick={() => setEditMember(null)}
+                  onClick={closeEdit}
                   className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2"
                 >
                   Zrušit

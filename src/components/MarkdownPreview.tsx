@@ -7,6 +7,7 @@ import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import "katex/dist/katex.min.css";
+import { cn } from "@/lib/utils";
 
 interface MarkdownPreviewProps {
   content: string;
@@ -57,8 +58,10 @@ export function MarkdownPreview({ content, className }: MarkdownPreviewProps) {
     );
   }
 
+  // Pictures sit centred on a line of their own, as the app draws them
+  // (BR-TFCS5D); preflight already makes <img> a block, so mx-auto is enough.
   return (
-    <div className={className}>
+    <div className={cn(className, "[&_img]:mx-auto")}>
       <ReactMarkdown
         remarkPlugins={[remarkMath, remarkGfm]}
         rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeKatex]}

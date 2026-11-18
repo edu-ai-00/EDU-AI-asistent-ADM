@@ -54,6 +54,20 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "consent.overview_sent": "Přehled odeslán rodiči",
   "consent.children_provisioned": "Dětské účty založeny",
   "consent.provision_failed": "Založení dětských účtů selhalo",
+
+  // Notification admin (BR-QK6WW3).
+  "notification_type.updated": "Typ notifikace upraven",
+  "notification_rule.created": "Pravidlo notifikací vytvořeno",
+  "notification_rule.updated": "Pravidlo notifikací upraveno",
+  "notification_rule.deleted": "Pravidlo notifikací smazáno",
+  "notification_rule.activated": "Pravidlo notifikací zapnuto",
+  "notification_rule.deactivated": "Pravidlo notifikací vypnuto",
+  "notification_broadcast.created": "Rozesílka vytvořena",
+  "notification_broadcast.updated": "Rozesílka upravena",
+  "notification_broadcast.sent": "Rozesílka odeslána",
+  "notification_broadcast.archived": "Rozesílka archivována",
+  "notification_broadcast.deleted": "Rozesílka smazána",
+  "export.notification_history": "Export historie notifikací",
 };
 
 /** The part before the first dot, e.g. `classroom` — what a `prefix.*` filter matches. */
@@ -64,6 +78,9 @@ export const AUDIT_ACTION_GROUP_LABELS: Record<string, string> = {
   course: "Kurzy",
   export: "Exporty",
   consent: "Souhlasy rodičů",
+  notification_type: "Typy notifikací",
+  notification_rule: "Pravidla notifikací",
+  notification_broadcast: "Rozesílky",
 };
 
 export const AUDIT_ROLE_LABELS: Record<string, string> = {
@@ -92,6 +109,9 @@ export const AUDIT_TARGET_TYPE_LABELS: Record<string, string> = {
   school: "Škola",
   course: "Kurz",
   consent: "Souhlas",
+  notification_type: "Typ notifikace",
+  notification_rule: "Pravidlo notifikací",
+  notification_broadcast: "Rozesílka",
 };
 
 function labelOr(map: Record<string, string>, key: string | null | undefined): string {

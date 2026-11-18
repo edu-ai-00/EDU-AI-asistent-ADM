@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import type { Course, UpdateCourseInput, DownloadResponse } from "@/types/api";
 import type { CourseV2 } from "@/types/block-v2";
+import { editCopyOf } from "@/lib/course-edit";
 
 const COURSES_KEY = ["courses"];
 
@@ -56,11 +57,24 @@ export function useCourseData(id: number | undefined) {
 }
 
 /**
+ * Download a course for the editor, with the version and status it saves
+ * against (BR-JUWYK2).
+ */
+export async function fetchCourseForEdit(course: Course) {
+  const download = await api.get<DownloadResponse>(`/admin/courses/${course.id}/download`);
+  const response = await fetch(download.download_url);
+  if (!response.ok) throw new Error("Failed to download course");
+  return editCopyOf((await response.json()) as CourseV2, download, course);
+}
+
+/**
  * `auto_version` is a transport-only flag: with it the API assigns the next
  * version instead of rejecting a stale one. The editor sets it; manual JSON
  * imports leave it off so they still get the version-collision error.
+ * `base_version` is the version the editor's copy was loaded from: a save
+ * over a course someone has changed since is refused (BR-JUWYK2).
  */
-export type CourseUploadPayload = CourseV2 & { auto_version?: boolean };
+export type CourseUploadPayload = CourseV2 & { auto_version?: boolean; base_version?: number };
 
 // Upload a new course (or update existing via course_id)
 export function useUploadCourse() {

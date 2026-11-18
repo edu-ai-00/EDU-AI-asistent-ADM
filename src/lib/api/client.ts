@@ -5,6 +5,7 @@
 // CORS, no NEXT_PUBLIC_* secrets.
 
 import { getSessionUser } from "@/lib/auth/session-user";
+import { setSentryUser } from "@/lib/sentry/user";
 
 const PROXY_BASE = "/api/backend";
 
@@ -76,6 +77,7 @@ async function handleUnauthorized(): Promise<void> {
   } catch {
     // ignore — cookies will still be cleared on redirect via server middleware
   }
+  setSentryUser(null);
   if (!window.location.pathname.startsWith("/login")) {
     const next = encodeURIComponent(window.location.pathname + window.location.search);
     window.location.replace(`/login?next=${next}`);
