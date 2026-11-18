@@ -13,7 +13,7 @@ import {
   migrateBlockToSteps,
 } from "@/lib/defaults";
 import { Navbar } from "@/components/admin/Navbar";
-import { useUploadCourse } from "@/hooks/useCourses";
+import { useUploadCourse, fetchCourseForEdit } from "@/hooks/useCourses";
 import { useVectorDimensions } from "@/hooks/useSkills";
 import { validateCourseGpfVectors } from "@/lib/gpf-vectors";
 import type { VectorDimensionLabel } from "@/components/editors/BlockV2Editor";
@@ -53,6 +53,7 @@ function HomeContent() {
   const [editCourseMeta, setEditCourseMeta] = useState<ApiCourse | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
+  const [isReloading, setIsReloading] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const uploadCourse = useUploadCourse();
 
@@ -278,9 +279,13 @@ function HomeContent() {
         // already taken is refused rather than saved over (BR-FZTSDK).
         version: isNewCourse ? courseV2.version : courseV2.version + 1,
         auto_version: !isNewCourse,
+        // The version this copy was loaded from. A save over a course someone
+        // else has changed since is refused instead of overwriting their work
+        // (BR-JUWYK2); the saved course becomes the next base.
+        base_version: editCourseMeta?.version,
         updated,
       });
-      if (isNewCourse) setEditCourseMeta(saved);
+      setEditCourseMeta(saved);
       const savedCourse: CourseV2 = {
         ...courseV2,
         version: saved.version,
@@ -301,6 +306,28 @@ function HomeContent() {
       // can carry a structure conflict with a list of diverging paths
       // (BR-AYACEK), which an alert() could not render usefully.
       setSaveError(err);
+    }
+  };
+
+  // After an edit conflict (BR-JUWYK2): drop the local copy and open the
+  // course as it is on the server now.
+  const handleReloadFromServer = async () => {
+    if (!editCourseMeta) return;
+    setIsReloading(true);
+    try {
+      const { courseData, meta } = await fetchCourseForEdit(editCourseMeta);
+      const fresh = migrateCourseBlocks(courseData);
+      setEditCourseMeta(meta);
+      setCourseV2(fresh);
+      setFilename(`${fresh.course_id}-v${fresh.version}.json`);
+      setHasChanges(false);
+      setSelection({ version: "v2", type: "course_v2", id: "course_v2", data: fresh });
+      setSaveError(null);
+      setShowSaveDialog(false);
+    } catch (err) {
+      setSaveError(err);
+    } finally {
+      setIsReloading(false);
     }
   };
 
@@ -369,8 +396,10 @@ function HomeContent() {
         error={saveError}
         gpfIssues={gpfIssues}
         isNew={isNewCourse}
+        isReloading={isReloading}
         onClose={() => { setShowSaveDialog(false); setSaveError(null); }}
         onConfirm={handleSaveToServer}
+        onReload={handleReloadFromServer}
       />
     </div>
   );

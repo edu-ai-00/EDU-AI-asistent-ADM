@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import {
@@ -8,6 +8,7 @@ import {
   structureConflictFrom,
 } from "@/components/admin/StructureConflictNotice";
 import { GpfVectorIssuesNotice } from "@/components/admin/GpfVectorIssuesNotice";
+import { editConflictFrom } from "@/lib/course-edit";
 import type { GpfVectorIssue } from "@/lib/gpf-vectors";
 import type { CourseV2 } from "@/types/block-v2";
 
@@ -21,8 +22,12 @@ interface SaveDialogProps {
   gpfIssues?: GpfVectorIssue[];
   /** A course from "Nový kurz" (BR-FZTSDK): the save creates it at its own version. */
   isNew?: boolean;
+  /** Loading the current version after an edit conflict (BR-JUWYK2). */
+  isReloading?: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  /** Drop the local copy and load the course as it is on the server. */
+  onReload?: () => void;
 }
 
 export function SaveDialog({
@@ -32,10 +37,15 @@ export function SaveDialog({
   error,
   gpfIssues = [],
   isNew = false,
+  isReloading = false,
   onClose,
   onConfirm,
+  onReload,
 }: SaveDialogProps) {
   const conflict = structureConflictFrom(error);
+  // Someone else changed the course since this copy was loaded (BR-JUWYK2).
+  // Retrying cannot succeed, so the way out is loading the current version.
+  const editConflict = onReload ? editConflictFrom(error) : null;
   const message = error instanceof Error ? error.message : null;
   const hasGpfIssues = gpfIssues.length > 0;
 
@@ -61,7 +71,26 @@ export function SaveDialog({
 
         {hasGpfIssues && <GpfVectorIssuesNotice issues={gpfIssues} />}
 
-        {conflict ? (
+        {editConflict ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2 text-sm text-amber-900">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">Kurz mezitím upravil někdo jiný</p>
+                <p className="mt-0.5 text-amber-800">
+                  Vaše kopie vychází z verze {editConflict.base_version}, na serveru je už
+                  verze {editConflict.current_version}. Uložením byste změny druhého
+                  autora přepsali, proto se neuložilo nic.
+                </p>
+              </div>
+            </div>
+            <p className="text-amber-800">
+              Načtením aktuální verze se vaše neuložené úpravy zahodí. Chcete-li si je
+              ponechat, zavřete toto okno, stáhněte je tlačítkem Export JSON a po načtení
+              je přeneste.
+            </p>
+          </div>
+        ) : conflict ? (
           <StructureConflictNotice conflict={conflict} message={message ?? undefined} />
         ) : (
           error != null && (
@@ -81,12 +110,18 @@ export function SaveDialog({
         )}
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button variant="secondary" onClick={onClose} disabled={isPending}>
+          <Button variant="secondary" onClick={onClose} disabled={isPending || isReloading}>
             Zrušit
           </Button>
-          <Button onClick={onConfirm} isLoading={isPending}>
-            {error ? "Zkusit znovu" : isNew ? "Vytvořit kurz" : "Uložit novou verzi"}
-          </Button>
+          {editConflict && onReload ? (
+            <Button onClick={onReload} isLoading={isReloading}>
+              Načíst aktuální verzi
+            </Button>
+          ) : (
+            <Button onClick={onConfirm} isLoading={isPending}>
+              {error ? "Zkusit znovu" : isNew ? "Vytvořit kurz" : "Uložit novou verzi"}
+            </Button>
+          )}
         </div>
       </div>
     </Dialog>

@@ -1,0 +1,730 @@
+{
+  "export_type": "course_v2",
+  "course_id": "DEMOKURZ03",
+  "version": 1,
+  "name": "Demo kurz – jen kvíz bez vyhodnocení",
+  "description": "Testovací kurz: obsahuje jen Kvíz, bez lekcí, a nezobrazuje vyhodnocení odpovědí.",
+  "language": "cs",
+  "author": "EduAI Team",
+  "updated": "2026-10-20T18:00:00.000Z",
+  "status": "published",
+  "pin": "424244",
+  "header_image": {
+    "url": "https://pub-4e0c94219f454e70a63b7f41b436f85f.r2.dev/assets/DEMOKURZ01/cover.png",
+    "alt": "Demo kurz EDU AI"
+  },
+  "only_quiz": true,
+  "starts_with_quiz": true,
+  "quiz_evaluate": false,
+  "lessons": [
+    {
+      "lesson_id": "DK3_L1",
+      "version": 1,
+      "name": "Kvíz",
+      "description": "Otázky Kvízu.",
+      "order": 1,
+      "blocks": [
+        {
+          "block_id": "DK3L1B01",
+          "order": 1
+        },
+        {
+          "block_id": "DK3L1B02",
+          "order": 2
+        },
+        {
+          "block_id": "DK3L1B03",
+          "order": 3
+        },
+        {
+          "block_id": "DK3L1B04",
+          "order": 4
+        },
+        {
+          "block_id": "DK3L1B05",
+          "order": 5
+        }
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "export_type": "block_v2",
+      "block_id": "DK3L1B01",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "exercise",
+      "duration": "2 min",
+      "xp": 20,
+      "gpf": {
+        "domain": "Algebra",
+        "construct": "Číselné výrazy",
+        "subconstruct": "A1.1 Číselné výrazy – vyhodnotí",
+        "grade": 7,
+        "level": 2,
+        "vector": [],
+        "kb_vector": [],
+        "relation_vector": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "elo_vector": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "learning": {
+        "concepts": [
+          "Sčítání"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "question",
+          "question": {
+            "type": "multiple_choice",
+            "options": [
+              {
+                "id": "opt_1",
+                "text": "4",
+                "is_correct": true
+              },
+              {
+                "id": "opt_2",
+                "text": "5",
+                "is_correct": false
+              },
+              {
+                "id": "opt_3",
+                "text": "22",
+                "is_correct": false
+              }
+            ],
+            "show_solution": true,
+            "solution": "2 + 2 = 4"
+          },
+          "content": "Kolik je 2 + 2?\n\n> **🧪 Co má být vidět**\n> Kurz má jen Kvíz – žádné lekce.\n> Vyhodnocení je vypnuté: žádné barvy, zpětná vazba ani řešení.",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "export_type": "block_v2",
+      "block_id": "DK3L1B02",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "exercise",
+      "duration": "2 min",
+      "xp": 20,
+      "gpf": {
+        "domain": "Číslo a operace",
+        "construct": "Zlomky",
+        "subconstruct": "N3.2 Zlomky – porovná",
+        "grade": 7,
+        "level": 2,
+        "vector": [],
+        "kb_vector": [],
+        "relation_vector": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "elo_vector": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          3.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "learning": {
+        "concepts": [
+          "Porovnávání zlomků"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "question",
+          "question": {
+            "type": "true_false",
+            "options": [
+              {
+                "id": "true",
+                "text": "True (Ano)",
+                "is_correct": false
+              },
+              {
+                "id": "false",
+                "text": "False (Ne)",
+                "is_correct": true
+              }
+            ]
+          },
+          "content": "Platí, že $\\frac{1}{3} > \\frac{1}{2}$?",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "export_type": "block_v2",
+      "block_id": "DK3L1B03",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "exercise",
+      "duration": "2 min",
+      "xp": 20,
+      "gpf": {
+        "domain": "Algebra",
+        "construct": "Číselné výrazy",
+        "subconstruct": "A1.1 Číselné výrazy – vyhodnotí",
+        "grade": 7,
+        "level": 2,
+        "vector": [],
+        "kb_vector": [],
+        "relation_vector": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "elo_vector": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          3.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "learning": {
+        "concepts": [
+          "Odmocnina"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "question",
+          "question": {
+            "type": "numeric",
+            "correct_number": 9,
+            "tolerance": 0
+          },
+          "content": "Kolik je $\\sqrt{81}$?",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "export_type": "block_v2",
+      "block_id": "DK3L1B04",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "exercise",
+      "duration": "2 min",
+      "xp": 20,
+      "gpf": {
+        "domain": "Geometrie",
+        "construct": "Rovinné útvary",
+        "subconstruct": "G1.1 Rovinné útvary – rozpozná a popíše",
+        "grade": 7,
+        "level": 2,
+        "vector": [],
+        "kb_vector": [],
+        "relation_vector": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "elo_vector": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "learning": {
+        "concepts": [
+          "Rovinné útvary"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "question",
+          "question": {
+            "type": "multiple_choice",
+            "allow_multiple": true,
+            "options": [
+              {
+                "id": "opt_1",
+                "text": "čtverec",
+                "is_correct": true
+              },
+              {
+                "id": "opt_2",
+                "text": "obdélník",
+                "is_correct": true
+              },
+              {
+                "id": "opt_3",
+                "text": "trojúhelník",
+                "is_correct": false
+              }
+            ]
+          },
+          "content": "Které útvary mají čtyři pravé úhly?",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "export_type": "block_v2",
+      "block_id": "DK3L1B05",
+      "version": 1,
+      "language": "cs",
+      "author": "EduAI Team",
+      "updated": "2026-10-20T18:00:00.000Z",
+      "status": "published",
+      "type": "exercise",
+      "duration": "2 min",
+      "xp": 20,
+      "gpf": {
+        "domain": "Číslo a operace",
+        "construct": "Násobení a dělení",
+        "subconstruct": "N6.1 Násobení a dělení",
+        "grade": 7,
+        "level": 2,
+        "vector": [],
+        "kb_vector": [],
+        "relation_vector": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "elo_vector": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "learning": {
+        "concepts": [
+          "Jednotky délky"
+        ],
+        "competencies": {},
+        "bloom_level": 2,
+        "difficulty": 2,
+        "prerequisites": []
+      },
+      "fsrs": {
+        "initial_difficulty": 0.3,
+        "initial_stability": 2.5,
+        "initial_recall": 0.65,
+        "forgetting_rate": 0.25,
+        "repetitions": 0,
+        "weight": 5.0,
+        "min_interval": 1,
+        "max_interval": 90
+      },
+      "steps": [
+        {
+          "type": "question",
+          "question": {
+            "type": "open",
+            "ai_evaluation": true,
+            "correct_answer": "100 cm\n100"
+          },
+          "content": "Kolik centimetrů má jeden metr?",
+          "id": "s1",
+          "order": 1
+        }
+      ]
+    }
+  ]
+}

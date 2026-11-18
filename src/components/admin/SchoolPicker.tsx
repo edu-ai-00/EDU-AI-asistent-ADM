@@ -1,6 +1,9 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
 import { useSchools } from "@/hooks/useSchools";
+import { assignedFirst, unassignedGroupStart } from "@/lib/school-picker-order";
 
 /**
  * Which schools a teacher belongs to, picked from the teacher's side
@@ -21,6 +24,16 @@ export function SchoolPicker({
 }) {
   const { data: schools, isLoading } = useSchools();
 
+  // The schools already filed on the account go on top (BR-Z5N45R), taken
+  // from the moment the dialog opened — see school-picker-order.ts for why
+  // ticking a box must not reorder the list underneath.
+  const [assignedOnOpen] = useState(() => new Set(value));
+  const ordered = useMemo(
+    () => assignedFirst(schools ?? [], assignedOnOpen),
+    [schools, assignedOnOpen]
+  );
+  const unassignedFrom = unassignedGroupStart(ordered, assignedOnOpen);
+
   const toggle = (id: number) => {
     onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
   };
@@ -40,10 +53,12 @@ export function SchoolPicker({
         </p>
       ) : (
         <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg bg-white divide-y divide-gray-100">
-          {schools.map((s) => (
+          {ordered.map((s, i) => (
             <label
               key={s.id}
-              className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+              className={`flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer ${
+                i === unassignedFrom ? "border-t-2 border-t-gray-200" : ""
+              }`}
             >
               <input
                 type="checkbox"

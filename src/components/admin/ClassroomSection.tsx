@@ -44,6 +44,8 @@ import { ClassroomTeachersSection } from "./ClassroomTeachersSection";
 import { ClassroomSkillsSection } from "./ClassroomSkillsSection";
 import { SchoolFilterSelect } from "./SchoolFilterSelect";
 import { ALL_SCHOOLS, matchesSchool, schoolOptions } from "@/lib/school-filter";
+import { matchesClassroom } from "@/lib/classroom-search";
+import { classroomDeletePrompt } from "@/lib/classroom-delete";
 import type { Classroom, ClassStudent } from "@/types/classroom";
 
 // ---------------------------------------------------------------------------
@@ -74,17 +76,15 @@ function ClassroomList({
     [classrooms]
   );
 
-  const filtered = useMemo(() => {
-    const bySchool = classrooms.filter((c) => matchesSchool(schoolsOf(c), schoolFilter));
-    if (!searchQuery.trim()) return bySchool;
-    const q = searchQuery.toLowerCase();
-    return bySchool.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.school?.name.toLowerCase().includes(q) ||
-        c.teachers?.some((t) => t.name.toLowerCase().includes(q))
-    );
-  }, [classrooms, searchQuery, schoolFilter]);
+  // Class, school and teacher, accent-free and word by word (BR-8BBW5W) —
+  // a raw substring never found "fuksova" in "Hana Fuksová".
+  const filtered = useMemo(
+    () =>
+      classrooms.filter(
+        (c) => matchesSchool(schoolsOf(c), schoolFilter) && matchesClassroom(c, searchQuery)
+      ),
+    [classrooms, searchQuery, schoolFilter]
+  );
 
   return (
     <div>
@@ -95,7 +95,7 @@ function ClassroomList({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               type="search"
-              placeholder="Hledat třídu podle názvu..."
+              placeholder="Hledat podle třídy, školy nebo učitele..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -272,7 +272,16 @@ function ClassroomDetail({
   const students = classroom.students ?? [];
   const teachers = classroom.teachers ?? [];
 
+  const deletePrompt = classroomDeletePrompt({
+    name: classroom.name,
+    studentCount: students.length,
+  });
+
   function handleDelete() {
+    // Irreversible and it takes the class's own pupil accounts with it, so
+    // ask first, like every other delete in admin (BR-3CN3QN).
+    if (!confirm(deletePrompt)) return;
+
     deleteMutation.mutate(classroomId, {
       onSuccess: () => onBack(),
     });

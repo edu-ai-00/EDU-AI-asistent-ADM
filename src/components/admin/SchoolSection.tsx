@@ -14,18 +14,16 @@ import {
   useDeleteSchool,
   useSyncSchoolClassrooms,
 } from "@/hooks/useSchools";
-import {
-  useClassrooms,
-  useCreateClassroom,
-  useUpdateClassroom,
-} from "@/hooks/useClassrooms";
+import { useClassrooms, useCreateClassroom } from "@/hooks/useClassrooms";
 import {
   useTeam,
   useCreateTeamMember,
   useUpdateTeamMember,
   useDeleteTeamMember,
 } from "@/hooks/useTeam";
+import { classroomHref } from "@/lib/admin-links";
 import { generateStudents } from "@/lib/classroom";
+import { pluralCs } from "@/lib/notifications";
 import {
   classroomCandidates,
   classroomsOf,
@@ -36,16 +34,6 @@ import {
 } from "@/lib/school-roster";
 import type { School, SchoolTeacher } from "@/types/school";
 import type { Classroom } from "@/types/classroom";
-
-// Copy of pluralCs from lib/notifications, which this release does not ship.
-// The next staging → main release brings that module back; import it from
-// there again then.
-function pluralCs(n: number, one: string, few: string, many: string): string {
-  const abs = Math.abs(n);
-  if (abs === 1) return one;
-  if (abs >= 2 && abs <= 4) return few;
-  return many;
-}
 
 /**
  * Schools as organisational units (BR-8QAWKP).
@@ -356,9 +344,9 @@ const byName = (a: { name: string }, b: { name: string }) =>
 
 function errorText(err: unknown, fallback: string): string {
   if (!(err instanceof Error)) return fallback;
-  // The team endpoint answers in English; this one is common enough here —
-  // someone tries to "invite" a colleague who is already on the team.
-  if (err.message === "This user is already a team member.") {
+  // Common enough here to be worth its own wording — someone tries to
+  // "invite" a colleague who is already on the team.
+  if (err.message === "Tento uživatel už je členem týmu.") {
     return "Tento e-mail už patří členovi týmu. Vyberte ho v nabídce „Vybrat existujícího“.";
   }
   return err.message || fallback;
@@ -421,26 +409,44 @@ function RowActions({
   editTitle,
   removeTitle,
   onEdit,
+  editHref,
   onRemove,
   disabled,
 }: {
   editTitle: string;
   removeTitle: string;
-  onEdit: () => void;
+  /** Edit the row in place… */
+  onEdit?: () => void;
+  /** …or send the pencil to a full editor in a new tab (BR-H7WZJ5). */
+  editHref?: string;
   onRemove: () => void;
   disabled?: boolean;
 }) {
   return (
     <div className="flex items-center gap-1 shrink-0">
-      <button
-        type="button"
-        onClick={onEdit}
-        disabled={disabled}
-        className="p-1.5 rounded hover:bg-gray-200 transition-colors disabled:opacity-50"
-        title={editTitle}
-      >
-        <Pencil className="w-4 h-4 text-gray-500" />
-      </button>
+      {editHref ? (
+        // A pencil that links out changes nothing here, so a save in
+        // flight has no reason to hold it back the way it holds the other.
+        <Link
+          href={editHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-1.5 rounded hover:bg-gray-200 transition-colors"
+          title={editTitle}
+        >
+          <Pencil className="w-4 h-4 text-gray-500" />
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={onEdit}
+          disabled={disabled}
+          className="p-1.5 rounded hover:bg-gray-200 transition-colors disabled:opacity-50"
+          title={editTitle}
+        >
+          <Pencil className="w-4 h-4 text-gray-500" />
+        </button>
+      )}
       <button
         type="button"
         onClick={onRemove}
@@ -724,7 +730,6 @@ function SchoolClassrooms({ school }: { school: School }) {
   const { data: classrooms } = useClassrooms();
   const syncClassrooms = useSyncSchoolClassrooms();
   const createClassroom = useCreateClassroom();
-  const updateClassroom = useUpdateClassroom();
 
   const own = useMemo(() => classroomsOf(classrooms ?? [], school.id), [classrooms, school.id]);
   const ownIds = own.map((c) => c.id);
@@ -739,11 +744,9 @@ function SchoolClassrooms({ school }: { school: School }) {
   const [newName, setNewName] = useState("");
   const [newCount, setNewCount] = useState(25);
   const [newTeacherIds, setNewTeacherIds] = useState<number[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editName, setEditName] = useState("");
   const [error, setError] = useState("");
 
-  const busy = syncClassrooms.isPending || createClassroom.isPending || updateClassroom.isPending;
+  const busy = syncClassrooms.isPending || createClassroom.isPending;
 
   async function run(action: () => Promise<unknown>, fallback: string): Promise<boolean> {
     setError("");
@@ -803,26 +806,6 @@ function SchoolClassrooms({ school }: { school: School }) {
       "Třídu se nepodařilo založit"
     );
     if (ok) setAdding(null);
-  }
-
-  function startEdit(c: Classroom) {
-    setEditingId(c.id);
-    setEditName(c.name);
-    setError("");
-  }
-
-  async function saveEdit(e: React.FormEvent) {
-    e.preventDefault();
-    if (editingId === null) return;
-    if (!editName.trim()) {
-      setError("Zadejte název třídy");
-      return;
-    }
-    const ok = await run(
-      () => updateClassroom.mutateAsync({ id: editingId, name: editName.trim() }),
-      "Změny se nepodařilo uložit"
-    );
-    if (ok) setEditingId(null);
   }
 
   async function remove(c: Classroom) {
@@ -945,49 +928,33 @@ function SchoolClassrooms({ school }: { school: School }) {
         <p className="text-sm text-gray-400 py-2">Škola zatím nemá žádné třídy.</p>
       ) : (
         <ul className="border border-gray-200 rounded-lg divide-y divide-gray-100">
-          {own.map((c) =>
-            editingId === c.id ? (
-              <li key={c.id} className="px-3 py-2">
-                <form onSubmit={saveEdit} className="flex items-center gap-2">
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    aria-label="Název třídy"
-                    autoFocus
-                  />
-                  <Button type="submit" size="sm" isLoading={updateClassroom.isPending}>
-                    Uložit
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                    Zrušit
-                  </Button>
-                </form>
-              </li>
-            ) : (
-              <li key={c.id} className="flex items-center gap-2 px-3 py-2">
-                <div className="min-w-0 flex-1">
-                  {/* Students, courses and the class code live in the class
-                      detail; the list here only names and files the class. */}
-                  <Link
-                    href={`/admin/users?tab=classrooms&classroom=${c.id}`}
-                    className="text-sm text-gray-900 hover:text-blue-600 hover:underline"
-                  >
-                    {c.name}
-                  </Link>{" "}
-                  <span className="text-xs text-gray-400">
-                    {c.students_count} {pluralCs(c.students_count, "žák", "žáci", "žáků")}
-                  </span>
-                </div>
-                <RowActions
-                  editTitle="Přejmenovat třídu"
-                  removeTitle="Odebrat třídu ze školy"
-                  onEdit={() => startEdit(c)}
-                  onRemove={() => remove(c)}
-                  disabled={busy}
-                />
-              </li>
-            )
-          )}
+          {own.map((c) => (
+            <li key={c.id} className="flex items-center gap-2 px-3 py-2">
+              <div className="min-w-0 flex-1">
+                {/* Students, courses and the class code live in the class
+                    detail; the list here only names and files the class. */}
+                <Link
+                  href={classroomHref(c.id)}
+                  className="text-sm text-gray-900 hover:text-blue-600 hover:underline"
+                >
+                  {c.name}
+                </Link>{" "}
+                <span className="text-xs text-gray-400">
+                  {c.students_count} {pluralCs(c.students_count, "žák", "žáci", "žáků")}
+                </span>
+              </div>
+              {/* The pencil used to rename the class here and nothing more;
+                  it now opens the whole class in a new tab, on Učitelé —
+                  the tab the school dialog is usually open for (BR-H7WZJ5). */}
+              <RowActions
+                editTitle="Upravit třídu (otevře se v nové záložce)"
+                removeTitle="Odebrat třídu ze školy"
+                editHref={classroomHref(c.id, "teachers")}
+                onRemove={() => remove(c)}
+                disabled={busy}
+              />
+            </li>
+          ))}
         </ul>
       )}
 

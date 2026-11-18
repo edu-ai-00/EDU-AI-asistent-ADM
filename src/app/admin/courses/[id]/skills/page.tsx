@@ -12,7 +12,9 @@ import {
   ChevronDown,
   ChevronRight,
   Eye,
+  Lock,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useCourse } from "@/hooks/useCourses";
 import {
   useVectors,
@@ -35,6 +37,7 @@ export default function CourseSkillConfigPage({
   params: { id: string };
 }) {
   const courseId = parseInt(params.id);
+  const { isAdmin } = useAuth();
   const { data: course, isLoading: courseLoading } = useCourse(courseId);
   const { data: config, isLoading: configLoading } =
     useCourseSkillConfig(courseId);
@@ -184,6 +187,39 @@ export default function CourseSkillConfigPage({
     };
     await saveConfig.mutateAsync(input);
   };
+
+  // The formulas are built over the admin-only vector catalogue (BR-JQMYFT),
+  // but a teacher reaches this page from the course card menu — so send them to
+  // the student overview, which is theirs to read, instead of an editor with an
+  // empty vector list.
+  if (!isAdmin) {
+    return (
+      <div>
+        <div className="mb-6">
+          <Link
+            href="/admin/courses"
+            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Kurzy
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900">Dovednosti</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
+          <Lock className="w-10 h-10 text-gray-300" />
+          <p className="text-gray-600">
+            Konfiguraci dovedností kurzu spravují jen administrátoři.
+          </p>
+          <Link href={`/admin/courses/${courseId}/skills/overview`}>
+            <Button variant="secondary" size="sm">
+              <Eye className="w-4 h-4" />
+              Přehled studentů
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) return <LoadingPage message="Načítám konfiguraci..." />;
   if (!course)

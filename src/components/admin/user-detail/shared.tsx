@@ -1,11 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import type {
-  BlockStepProgress,
-  CourseProgressData,
-  StepAnswer,
-} from "@/types/api";
+import type { CourseProgressData } from "@/types/api";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,14 +69,7 @@ export function safeParseCourseProgress(
   return raw;
 }
 
-export function getStepAnswers(
-  sp: BlockStepProgress,
-): Record<string, StepAnswer> | null {
-  if (!sp.stepAnswers || Array.isArray(sp.stepAnswers)) return null;
-  const entries = Object.entries(sp.stepAnswers);
-  if (entries.length === 0) return null;
-  return sp.stepAnswers as Record<string, StepAnswer>;
-}
+export { getStepAnswers } from "@/lib/step-answers";
 
 // ── Tab type ─────────────────────────────────────────────────────────────────
 

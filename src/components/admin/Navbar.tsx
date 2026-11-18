@@ -25,12 +25,14 @@ import {
   ChevronDown,
   Settings,
   Baby,
+  Bell,
   GraduationCap,
   ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { setSentryUser } from "@/lib/sentry/user";
 import type { LucideIcon } from "lucide-react";
 
 interface NavItem {
@@ -40,6 +42,11 @@ interface NavItem {
   exact?: boolean;
   /** If set, only these roles see the item. Omit = visible to all. */
   roles?: ("admin" | "teacher")[];
+  /**
+   * The page has its own ?tab= bar and no sibling nav items, so the item stays
+   * highlighted on every tab instead of only the tab-less default.
+   */
+  anyTab?: boolean;
 }
 
 interface NavGroup {
@@ -89,6 +96,9 @@ const adminSubItems: NavItem[] = [
   { href: "/admin/vectors", label: "Dovednosti", icon: Layers, roles: ["admin"] },
   { href: "/admin/feedback", label: "Zpětná vazba", icon: MessageSquare, roles: ["admin"] },
   { href: "/admin/news", label: "Novinky", icon: Newspaper, roles: ["admin"] },
+  // Notification types, rules, broadcasts and delivery history (BR-QK6WW3).
+  // One item: its four tabs live on the page itself.
+  { href: "/admin/notifications", label: "Notifikace", icon: Bell, roles: ["admin"], anyTab: true },
   { href: "/admin/avatar", label: "Avatar", icon: Shirt, roles: ["admin"] },
   { href: "/admin/self-service", label: "Samoobsluha", icon: Baby, roles: ["admin"] },
 ];
@@ -106,6 +116,8 @@ function isNavItemActive(item: NavItem, pathname: string, searchParams: URLSearc
   if (item.exact) return pathname === itemPath && !itemTab;
 
   if (!pathname.startsWith(itemPath)) return false;
+
+  if (item.anyTab) return true;
 
   // If the nav item has a ?tab= param, match it
   if (itemTab) return searchParams.get("tab") === itemTab;
@@ -158,6 +170,7 @@ export function Navbar() {
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
+    setSentryUser(null);
     router.push("/login");
     router.refresh();
   };

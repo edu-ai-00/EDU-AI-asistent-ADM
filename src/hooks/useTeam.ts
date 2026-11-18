@@ -25,6 +25,8 @@ export interface TeamMember {
   invite_expires_at: string | null;
   /** The schools this member is filed under; empty when none. */
   schools: SchoolRef[];
+  /** The classes this member teaches — classroom_teacher (BR-6W6R5Y). */
+  teaching_classroom_ids: number[];
   created_at: string;
   deactivated_at: string | null;
 }
@@ -80,10 +82,13 @@ export function useUpdateTeamMember() {
       email?: string;
       role?: TeamRole;
       school_ids?: number[];
+      teaching_classroom_ids?: number[];
     }) => api.put<TeamMember>(`/admin/team/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team"] });
       queryClient.invalidateQueries({ queryKey: ["schools"] });
+      // The class list names its teachers, so a reassignment shows there too.
+      queryClient.invalidateQueries({ queryKey: ["classrooms"] });
     },
   });
 }

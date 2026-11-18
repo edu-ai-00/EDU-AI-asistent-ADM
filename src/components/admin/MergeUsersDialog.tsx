@@ -340,6 +340,26 @@ export function MergeUsersDialog({ open, onClose }: MergeUsersDialogProps) {
     setDirection((d) => (d === "left-source" ? "right-source" : "left-source"));
   }, [preview, sourceUser, targetUser]);
 
+  // Detect blocking errors from preview.
+  const blockingError = useMemo(() => {
+    if (previewQuery.error) {
+      const e = previewQuery.error;
+      if (e.status === 410) {
+        return "Tento profil byl už sloučen do jiného účtu.";
+      }
+      if (e.status === 422) {
+        // 422 messages from spec §8: already merged, admin/teacher, etc.
+        return e.message || "Sloučení nelze provést pro tyto profily.";
+      }
+      return e.message || "Nepodařilo se načíst náhled sloučení.";
+    }
+    if (preview?.blocking_error) return preview.blocking_error;
+    return null;
+  }, [previewQuery.error, preview]);
+
+  // Every hook has to run above this line: the page keeps the dialog mounted
+  // and only flips `open`, so a hook below it would change the hook count
+  // between renders (React #310, BR-ZKN2T9).
   if (!open) return null;
 
   // ── Step transitions ───────────────────────────────────────────────────────
@@ -401,23 +421,6 @@ export function MergeUsersDialog({ open, onClose }: MergeUsersDialogProps) {
   const directionBannerText = preview?.direction_locked
     ? "Profil s e-mailem zůstane (PIN profil bude sloučen do něj)."
     : null;
-
-  // Detect blocking errors from preview.
-  const blockingError = useMemo(() => {
-    if (previewQuery.error) {
-      const e = previewQuery.error;
-      if (e.status === 410) {
-        return "Tento profil byl už sloučen do jiného účtu.";
-      }
-      if (e.status === 422) {
-        // 422 messages from spec §8: already merged, admin/teacher, etc.
-        return e.message || "Sloučení nelze provést pro tyto profily.";
-      }
-      return e.message || "Nepodařilo se načíst náhled sloučení.";
-    }
-    if (preview?.blocking_error) return preview.blocking_error;
-    return null;
-  }, [previewQuery.error, preview]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

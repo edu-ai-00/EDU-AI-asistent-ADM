@@ -10,8 +10,11 @@ import {
   createLessonV2,
   createBlockV2,
 } from "@/lib/defaults";
+import { lessonBlockUsage, removeLesson } from "@/lib/course-blocks";
 import { cn } from "@/lib/utils";
 import { useLanguages } from "@/hooks/useLanguages";
+import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
 
 interface CourseV2EditorProps {
   course: CourseV2;
@@ -20,6 +23,7 @@ interface CourseV2EditorProps {
 
 export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
   const [draggedLessonIndex, setDraggedLessonIndex] = useState<number | null>(null);
+  const [lessonToRemove, setLessonToRemove] = useState<LessonV2 | null>(null);
   // Language picker reads the shared catalogue the API validates against
   // (BR-AYACEK); inactive codes are included so an existing course keeps its own.
   const { data: languages } = useLanguages(true);
@@ -84,13 +88,16 @@ export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
     });
   };
 
-  const removeLesson = (lessonId: string) => {
-    if (!confirm("Remove this lesson?")) return;
-    onChange({
-      ...course,
-      lessons: course.lessons.filter((l) => l.lesson_id !== lessonId),
-    });
+  // Deleting a lesson asks whether its blocks go too; blocks another lesson
+  // still uses always stay (BR-FQDZ5U).
+  const confirmRemoveLesson = (withBlocks: boolean) => {
+    if (!lessonToRemove) return;
+    onChange(removeLesson(course, lessonToRemove.lesson_id, { withBlocks }));
+    setLessonToRemove(null);
   };
+  const lessonToRemoveUsage = lessonToRemove
+    ? lessonBlockUsage(course, lessonToRemove.lesson_id)
+    : { own: [], shared: [] };
 
   const addBlock = () => {
     const newBlock = createBlockV2();
@@ -649,7 +656,7 @@ export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
                     </div>
                   </div>
                   <button
-                    onClick={() => removeLesson(lesson.lesson_id)}
+                    onClick={() => setLessonToRemove(lesson)}
                     className="text-red-500 hover:text-red-700 p-1"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -722,6 +729,57 @@ export function CourseV2Editor({ course, onChange }: CourseV2EditorProps) {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog
+        open={lessonToRemove !== null}
+        onClose={() => setLessonToRemove(null)}
+        title={`Smazat lekci „${lessonToRemove?.name ?? ""}“?`}
+      >
+        <div className="space-y-4 text-sm text-gray-600">
+          {lessonToRemoveUsage.own.length > 0 ? (
+            <p>
+              {lessonToRemoveUsage.own.length === 1
+                ? "Lekce má 1 blok, který není v žádné jiné lekci."
+                : `Lekce má ${lessonToRemoveUsage.own.length} ${blocksCs(lessonToRemoveUsage.own.length)}, které nejsou v žádné jiné lekci.`}{" "}
+              Smazat je spolu s lekcí? Ponechané bloky zůstanou v kurzu v sekci
+              Unassigned.
+            </p>
+          ) : (
+            <p>Lekce nemá žádné vlastní bloky.</p>
+          )}
+          {lessonToRemoveUsage.shared.length > 0 && (
+            <p>
+              {lessonToRemoveUsage.shared.length === 1
+                ? "1 blok používá i jiná lekce, ten zůstane zachován."
+                : `${lessonToRemoveUsage.shared.length} ${blocksCs(lessonToRemoveUsage.shared.length)} používá i jiná lekce, ty zůstanou zachovány.`}
+            </p>
+          )}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" onClick={() => setLessonToRemove(null)}>
+              Zrušit
+            </Button>
+            {lessonToRemoveUsage.own.length > 0 ? (
+              <>
+                <Button variant="secondary" onClick={() => confirmRemoveLesson(false)}>
+                  Smazat jen lekci
+                </Button>
+                <Button variant="danger" onClick={() => confirmRemoveLesson(true)}>
+                  Smazat lekci i bloky
+                </Button>
+              </>
+            ) : (
+              <Button variant="danger" onClick={() => confirmRemoveLesson(false)}>
+                Smazat lekci
+              </Button>
+            )}
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
+}
+
+function blocksCs(n: number): string {
+  if (n === 1) return "blok";
+  return n >= 2 && n <= 4 ? "bloky" : "bloků";
 }
